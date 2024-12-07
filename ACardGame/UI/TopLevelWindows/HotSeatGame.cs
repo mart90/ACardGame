@@ -1,5 +1,6 @@
 ﻿using ACardGameLibrary;
 using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,15 +11,32 @@ namespace ACardGame.UI
         public GameStateManager GameState { get; private set; }
 
         public List<CardContainer> ActivePlayerHand { get; private set; }
-        public UiElement ActivePlayerDeck { get; set; }
-        public UiElement ActivePlayerDiscardPile { get; set; }
-        public UiElement EnemyDiscardPile { get; set; }
-        public UiElement EnemyDeck { get; set; }
-        public UiElement EnemyHand { get; set; }
+        public FaceDownCardStack ActivePlayerDeck { get; set; }
+        public CardContainer ActivePlayerDiscardPile { get; set; }
+
+        public FaceDownCardStack EnemyDeck { get; set; }
+        public FaceDownCardStack EnemyHand { get; set; }
+        public CardContainer EnemyDiscardPile { get; set; }
+
+        public CardContainer ActivePlayerLeader { get; set; }
+        public CardContainer EnemyLeader { get; set; }
+
+        public Shop Shop { get; set; }
+
+        public Battlefield Battlefield { get; set; }
 
         public DiscardViewer DiscardViewer { get; set; }
+        public CardContainer HoveredCardViewer { get; set; }
 
-        public UiElement HoveredCardViewer { get; set; }
+        public Button PassButton { get; set; }
+        public Button ToggleShopButton { get; set; }
+
+        public bool PlayerIsTargeting { get; set; }
+        public Action TargetedCallback { get; set; }
+        public List<Card> TargetedCards => Shop.Children.Concat(Battlefield.Children).Concat(DiscardViewer.Children)
+            .Where(e => e is CardContainer cc && cc.Card != null && cc.IsTargeted)
+            .Select(e => ((CardContainer)e).Card)
+            .ToList();
 
         public HotSeatGame(Rectangle absoluteLocation, AssetManager assetManager, GameStateManager gameStateManager)
             : base(absoluteLocation, assetManager)
@@ -30,7 +48,7 @@ namespace ACardGame.UI
 
             BuildUI();
 
-            LoadActivePlayerBoardState();
+            Update();
         }
 
         private void BuildUI()
@@ -41,81 +59,229 @@ namespace ACardGame.UI
             SetCursor(1.5, 78);
             for (int i = 0; i < 12; i++)
             {
-                var cardContainer = new CardContainer(20, false, null);
+                int currentIndex = i;
+                var cardContainer = new CardContainer(AssetManager, 20, false, delegate
+                {
+                    TryPlayCard(currentIndex);
+                });
                 ActivePlayerHand.Add(cardContainer);
                 AddChild(cardContainer);
                 AddSpacing(.2);
             }
 
+            // Leader
+            SetCursor(60, 55);
+            ActivePlayerLeader = new CardContainer(AssetManager, 20, false);
+            AddChild(ActivePlayerLeader);
+
             // Deck
-            SetCursor(71, 55);
-            ActivePlayerDeck = new UiElement(AssetManager.LoadTexture("UI/cardback"), 20, false);
+            AddSpacing(5);
+            ActivePlayerDeck = new FaceDownCardStack(AssetManager, 20, false)
+            {
+                Text = "0",
+                TextIsCentered = true
+            };
             AddChild(ActivePlayerDeck);
 
             // Discard pile
             AddSpacing(.2);
-            ActivePlayerDiscardPile = new CardContainer(20, false, delegate
+            ActivePlayerDiscardPile = new CardContainer(AssetManager, 20, false, delegate
             {
-                ShowActivePlayerDiscardPile();
+                ToggleDiscardViewer(true);
             });
             AddChild(ActivePlayerDiscardPile);
 
-            GoLeft();
-
             // Enemy discard pile
+            GoLeft();
             SetCursor(98, 2);
-            EnemyDiscardPile = new CardContainer(20, false, delegate
+            EnemyDiscardPile = new CardContainer(AssetManager, 20, false, delegate
             {
-                ShowEnemyDiscardPile();
+                ToggleDiscardViewer(false);
             });
             AddChild(EnemyDiscardPile);
 
             // Enemy deck
             AddSpacing(.2);
-            EnemyDeck = new UiElement(AssetManager.LoadTexture("UI/cardback"), 20, false);
+            EnemyDeck = new FaceDownCardStack(AssetManager, 20, false)
+            {
+                Text = "0",
+                TextIsCentered = true
+            };
             AddChild(EnemyDeck);
 
-            // Enemy hand
+            // Enemy leader
             GoRight();
-            SetCursor(71, 2);
-            EnemyHand = new UiElement(AssetManager.LoadTexture("UI/cardback"), 20, false);
+            SetCursor(60, 2);
+            EnemyLeader = new CardContainer(AssetManager, 20, false);
+            AddChild(EnemyLeader);
+
+            // Enemy hand
+            AddSpacing(5);
+            EnemyHand = new FaceDownCardStack(AssetManager, 20, false)
+            {
+                Text = "0",
+                TextIsCentered = true
+            };
             AddChild(EnemyHand);
 
             // Discard viewer
-            SetCursor(60, 2);
-            DiscardViewer = new DiscardViewer(AssetManager, 73, false);
+            SetCursor(50, 0);
+            DiscardViewer = new DiscardViewer(AssetManager, 80, false);
             AddChild(DiscardViewer);
 
             // Hovered card viewer
             SetCursor(88, 65);
-            HoveredCardViewer = new UiElement(0.6, 11, true);
+            HoveredCardViewer = new CardContainer(AssetManager, 11, true);
+            HoveredCardViewer.CardTitle.TextFont = AssetManager.LoadFont("cardTitleFont_viewer");
+            HoveredCardViewer.CardText.TextFont = AssetManager.LoadFont("cardTextFont_viewer");
+            HoveredCardViewer.CardCost.TextFont = AssetManager.LoadFont("cardCostFont_viewer");
+            HoveredCardViewer.CardSubTypes.TextFont = AssetManager.LoadFont("cardTextFont_viewer");
+            HoveredCardViewer.CardCombatStats.TextFont = AssetManager.LoadFont("cardCombatStatsFont_viewer");
+            HoveredCardViewer.CardCurrencyValue.TextFont = AssetManager.LoadFont("cardCurrencyValueFont_viewer");
             AddChild(HoveredCardViewer);
+
+            // Shop
+            SetCursor(1.5, 1.5);
+            Shop = new Shop(AssetManager, 34, true);
+            for (int i = 0; i < 5; i++)
+            {
+                int currentIndex = i;
+                var cardContainer = new CardContainer(AssetManager, 20, true, delegate
+                {
+                    TryBuyCard(currentIndex);
+                });
+                Shop.AddChild(cardContainer);
+                Shop.AddSpacing(.5);
+            }
+            AddChild(Shop);
+
+            // Pass button
+            SetCursor(89, 55);
+            PassButton = new Button(AssetManager, ButtonType.Long, 10, true, "Pass", delegate
+            {
+                Pass();
+            });
+            AddChild(PassButton);
+
+            // Battlefield
+            SetCursor(1.5, 12);
+            Battlefield = new Battlefield(AssetManager, 50, true);
+            AddChild(Battlefield);
+
+            // Toggle shop button
+            SetCursor(40, 1.5);
+            ToggleShopButton = new Button(AssetManager, ButtonType.Long, 10, true, "Toggle shop", delegate
+            {
+                ToggleShop();
+            })
+            {
+                IsVisible = false
+            };
+            AddChild(ToggleShopButton);
         }
 
-        private void PlayCard(Card card)
+        private void TryPlayCard(int containerIndex)
+        {
+            if (PlayerIsTargeting)
+            {
+                return;
+            }
+
+            var card = ActivePlayerHand[containerIndex].Card;
+
+            if (ActivePlayerHand[containerIndex].Card == null)
+            {
+                return;
+            }
+
+            if (GameState.CanPlayCard(true, card))
+            {
+                if (card.GetMainType() == CardType.Creature && GameState.IsInCombat && !GameState.ActivePlayer.IsAttacking)
+                {
+                    PlayerIsTargeting = true;
+
+                    TargetedCallback = delegate
+                    {
+                        GameState.PlayCard(new PlayCardParams
+                        {
+                            Card = card,
+                            IsActivePlayer = true,
+                            IsBlockingCreature = (CreatureCard)TargetedCards.First()
+                        });
+                    };
+
+                    return;
+                }
+
+                GameState.PlayCard(new PlayCardParams
+                {
+                    Card = card,
+                    IsActivePlayer = true
+                });
+            }
+
+            if (GameState.IsInCombat)
+            {
+                Shop.IsVisible = false;
+                ToggleShopButton.IsVisible = true;
+                Battlefield.IsVisible = true;
+            }
+        }
+
+        private void TryBuyCard(int containerIndex)
+        {
+            if (Shop.Cards.Count <= containerIndex)
+            {
+                return;
+            }
+
+            var card = Shop.Cards[containerIndex].Card;
+
+            if (GameState.CanBuyCard(card))
+            {
+                GameState.BuyCard(true, card);
+            }
+        }
+
+        private void Pass()
+        {
+            GameState.Pass(GameState.ActivePlayer);
+        }
+
+        private void ToggleDiscardViewer(bool isActivePlayer)
+        {
+            if (DiscardViewer.IsVisible && DiscardViewer.IsActivePlayer == isActivePlayer)
+            {
+                DiscardViewer.IsVisible = false;
+                return;
+            }
+
+            DiscardViewer.SetCards(isActivePlayer ? GameState.ActivePlayer.DiscardPile : GameState.Enemy.DiscardPile);
+            DiscardViewer.IsActivePlayer = isActivePlayer;
+            DiscardViewer.IsVisible = true;
+        }
+
+        private void ToggleShop()
+        {
+            Shop.IsVisible = !Shop.IsVisible;
+            Battlefield.IsVisible = !Battlefield.IsVisible;
+        }
+
+        private void EndCombat()
         {
             // TODO
-        }
-
-        private void ShowActivePlayerDiscardPile()
-        {
-            DiscardViewer.SetCards(GameState.ActivePlayer.DiscardPile);
-            DiscardViewer.IsVisible = true;
-        }
-
-        private void ShowEnemyDiscardPile()
-        {
-            DiscardViewer.SetCards(GameState.Enemy.DiscardPile);
-            DiscardViewer.IsVisible = true;
+            // Hide battlefield
+            // Hide toggle shop button
+            // Show shop
         }
 
         public override void Hover(Point position)
         {
-            var child = Children.Where(e => e.AbsoluteLocation.Contains(position)).FirstOrDefault();
+            var child = GetHoveredChildRecursive(position, this);
 
-            if (child == null || !child.IsVisible)
+            if (child == this)
             {
-                HoveredCardViewer.Texture = null;
+                HoveredCardViewer.Clear();
                 return;
             }
 
@@ -123,17 +289,9 @@ namespace ACardGame.UI
             {
                 ShowHoveredCard(container.Card.Name);
             }
-            else if (child is DiscardViewer discardViewer)
-            {
-                var hoveredCard = discardViewer.GetHoveredCard(position);
-                if (hoveredCard != null)
-                {
-                    ShowHoveredCard(hoveredCard.Name);
-                }
-            }
             else 
             {
-                HoveredCardViewer.Texture = null;
+                HoveredCardViewer.Clear();
             }
         }
 
@@ -141,46 +299,66 @@ namespace ACardGame.UI
         {
             base.LeftClick(position);
 
-            var child = Children.Where(e => e.AbsoluteLocation.Contains(position)).FirstOrDefault();
+            var child = Children
+                .Where(e => e.AbsoluteLocation.Contains(position) && e.IsVisible)
+                .FirstOrDefault();
 
-            if (child == null || !child.IsVisible)
+            if (child == null)
             {
                 return;
             }
 
-            if (child is CardContainer container && container.Card != null)
-            {
-                PlayCard(container.Card);
-            }
+            // TODO?
         }
 
         private void ShowHoveredCard(string name)
         {
-            HoveredCardViewer.Texture = AssetManager.LoadCardTexture(name);
+            HoveredCardViewer.SetCard(CardLibrary.GetCard(name));
         }
 
-        public void LoadActivePlayerBoardState()
+        public override void Update()
         {
-            var cardsInHand = GameState.ActivePlayer.CardsInHand;
+            if (PlayerIsTargeting && TargetedCards.Any())
+            {
+                TargetedCallback();
+                TargetedCallback = null;
+                PlayerIsTargeting = false;
+            }
+
+            ActivePlayerHand.ForEach(e => e.Clear());
+            var cardsInHand = GameState.ActivePlayer.Hand;
             for (int i = 0; i < cardsInHand.Count; i++)
             {
-                ActivePlayerHand[i].Card = cardsInHand[i];
-                ActivePlayerHand[i].Texture = AssetManager.LoadCardTexture(cardsInHand[i].Name);
+                if (cardsInHand[i] != null)
+                {
+                    ActivePlayerHand[i].SetCard(cardsInHand[i]);
+                }
             }
 
             if (GameState.ActivePlayer.Deck.Any())
             {
                 ActivePlayerDeck.IsVisible = true;
+                ActivePlayerDeck.Text = GameState.ActivePlayer.Deck.Count.ToString();
             }
             else
             {
                 ActivePlayerDeck.IsVisible = false;
             }
 
+            if (GameState.ActivePlayer.Leader != null)
+            {
+                ActivePlayerLeader.IsVisible = true;
+                ActivePlayerLeader.SetCard(GameState.ActivePlayer.Leader);
+            }
+            else
+            {
+                ActivePlayerLeader.IsVisible = false;
+            }
+
             if (GameState.ActivePlayer.DiscardPile.Any())
             {
                 ActivePlayerDiscardPile.IsVisible = true;
-                ActivePlayerDiscardPile.Texture = AssetManager.LoadCardTexture(GameState.ActivePlayer.DiscardPile.Last().Name);
+                ActivePlayerDiscardPile.SetCard(GameState.ActivePlayer.DiscardPile.Last());
             }
             else
             {
@@ -188,9 +366,10 @@ namespace ACardGame.UI
             }
 
 
-            if (GameState.Enemy.CardsInHand.Any())
+            if (GameState.Enemy.Hand.Any())
             {
-                EnemyDeck.IsVisible = true;
+                EnemyHand.IsVisible = true;
+                EnemyHand.Text = GameState.Enemy.Hand.Count.ToString();
             }
             else
             {
@@ -200,28 +379,42 @@ namespace ACardGame.UI
             if (GameState.Enemy.Deck.Any())
             {
                 EnemyDeck.IsVisible = true;
+                EnemyDeck.Text = GameState.Enemy.Deck.Count.ToString();
             }
             else
             {
                 EnemyDeck.IsVisible = false;
             }
 
+            if (GameState.Enemy.Leader != null)
+            {
+                EnemyLeader.IsVisible = true;
+                EnemyLeader.SetCard(GameState.Enemy.Leader);
+            }
+            else
+            {
+                EnemyLeader.IsVisible = false;
+            }
+
             if (GameState.Enemy.DiscardPile.Any())
             {
                 EnemyDiscardPile.IsVisible = true;
-                EnemyDiscardPile.Texture = AssetManager.LoadCardTexture(GameState.Enemy.DiscardPile.Last().Name);
+                EnemyDiscardPile.SetCard(GameState.Enemy.DiscardPile.Last());
             }
             else
             {
                 EnemyDiscardPile.IsVisible = false;
             }
-        }
 
-        public void SwitchTurn()
-        {
-            ActivePlayerHand.Clear();
-            GameState.SwitchTurn();
-            LoadActivePlayerBoardState();
+            if (Shop.IsVisible)
+            {
+                Shop.SetCards(GameState.CurrentShop);
+            }
+
+            if (Battlefield.IsVisible)
+            {
+                Battlefield.Refresh(GameState);
+            }
         }
     }
 }

@@ -126,9 +126,11 @@ namespace ACardGame.UI
 
         public virtual void LeftClick(Point position)
         {
-            var child = Children.Where(e => e.AbsoluteLocation.Contains(position)).FirstOrDefault();
+            var child = Children
+                .Where(e => e.AbsoluteLocation.Contains(position) && e.IsVisible)
+                .FirstOrDefault();
 
-            if (child == null || !child.IsVisible)
+            if (child == null)
             {
                 return;
             }
@@ -145,9 +147,11 @@ namespace ACardGame.UI
 
         public virtual void RightClick(Point position)
         {
-            var child = Children.Where(e => e.AbsoluteLocation.Contains(position)).FirstOrDefault();
+            var child = Children
+                .Where(e => e.AbsoluteLocation.Contains(position) && e.IsVisible)
+                .FirstOrDefault();
 
-            if (child == null || !child.IsVisible)
+            if (child == null)
             {
                 return;
             }
@@ -157,14 +161,34 @@ namespace ACardGame.UI
 
         public virtual void Hover(Point position)
         {
-            var child = Children.Where(e => e.AbsoluteLocation.Contains(position)).FirstOrDefault();
+            var child = GetHoveredChildRecursive(position, this);
 
-            if (child == null || !child.IsVisible)
+            if (child == this)
             {
                 return;
             }
 
             // TODO
+        }
+
+        protected virtual UiElement GetHoveredChildRecursive(Point position, UiContainer parent)
+        {
+            var child = parent.Children
+                .Where(e => e.AbsoluteLocation.Contains(position) && e.IsVisible)
+                .FirstOrDefault();
+
+            if (child == null)
+            {
+                return parent;
+            }
+            else if (child is UiContainer container)
+            {
+                return container.GetHoveredChildRecursive(position, container);
+            }
+            else
+            {
+                return child;
+            }
         }
 
         public override void Draw(SpriteBatch spriteBatch)

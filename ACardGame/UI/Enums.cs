@@ -14,4 +14,10 @@
         Up,
         Down
     }
+
+    public enum ButtonType
+    {
+        Long,
+        Short
+    }
 }

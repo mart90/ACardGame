@@ -13,14 +13,14 @@ namespace ACardGame.UI
             
             GoDown();
 
-            AddChild(new Button(assetManager.LoadTexture("UI/loginButton"), 10, true, delegate
+            AddChild(new Button(assetManager, ButtonType.Long, 10, true, "Hot seat", delegate
             {
                 NewUiState = UiState.HotSeatGame;
             }));
 
             AddSpacing(2);
 
-            AddChild(new Button(assetManager.LoadTexture("UI/registerButton"), 10, true, delegate
+            AddChild(new Button(assetManager, ButtonType.Long, 10, true, "Multiplayer", delegate
             {
                 NewUiState = UiState.LobbyBrowser;
             }));

@@ -89,6 +89,8 @@ namespace ACardGame
 
             //_client.PollEvents();
 
+            _activeWindow.Update();
+
             base.Update(gameTime);
         }
 

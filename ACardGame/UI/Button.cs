@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 
 namespace ACardGame.UI
@@ -13,10 +14,14 @@ namespace ACardGame.UI
         public string ToolTipOnHover { get; set; }
         public Action OnHoverAction { get; set; }
 
-        public Button(Texture2D backgroundTexture, double relativeSize, bool sizeExpressedInX, Action onClickAction, double? aspectRatio = null)
-            : base(backgroundTexture, relativeSize, sizeExpressedInX, aspectRatio)
+        public Button(AssetManager assetManager, ButtonType type, double relativeSize, bool sizeExpressedInX, string text, Action onClickAction, double? aspectRatio = null)
+            : base(type == ButtonType.Long ? assetManager.LoadTexture("UI/button_long") : assetManager.LoadTexture("UI/button_short"), relativeSize, sizeExpressedInX, aspectRatio)
         {
             OnLeftClickAction = onClickAction;
+            TextIsCentered = true;
+            Text = text;
+            TextColor = Color.White;
+            TextFont = assetManager.LoadFont("buttonFont");
         }
     }
 }

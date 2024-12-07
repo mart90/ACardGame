@@ -12,5 +12,7 @@ namespace ACardGame.UI
 
         public UiState CorrespondingUiState { get; set; }
         public UiState? NewUiState { get; set; }
+
+        public virtual void Update() { }
     }
 }

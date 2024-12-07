@@ -7,17 +7,20 @@
         Creature,
         Support,
         Leader,
+
         Infantry,
         Ranged,
         Cavalry,
         Flying,
-        Siege
+        Siege,
+        Legendary
     }
 
     public enum GameEvent
     {
         StartingRound,
         EndingRound,
+        RefreshingShop,
         StartingCombat,
         ResolvingCombat,
         EndingCombat,
@@ -34,6 +37,6 @@
     public enum CardEffectPhase
     {
         OnPlay,
-        OnRemove
+        OnTurnEnd
     }
 }
