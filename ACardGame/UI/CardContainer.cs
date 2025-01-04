@@ -5,7 +5,7 @@ using System;
 
 namespace ACardGame.UI
 {
-    public class CardContainer : UiContainer, ILeftClickable
+    public class CardContainer : UiContainer, ILeftClickable, IHoverable
     {
         public Card Card { get; private set; }
 
@@ -20,21 +20,35 @@ namespace ACardGame.UI
         public Texture2D BeingLeftClickedTexture { get; set; }
         public Action OnLeftClickAction { get; set; }
 
-        public bool IsTargeted { get; set; }
+        public bool IsHovered { get; set; }
+        public Texture2D HoverTexture { get; set; }
+        public string ToolTipOnHover { get; set; }
+        public Action OnHoverAction { get; set; }
 
-        public CardContainer(AssetManager assetManager, double relativeSize, bool sizeExpressedInX, Action onClickAction = null)
+        public CardContainer(AssetManager assetManager, double relativeSize, bool sizeExpressedInX, Action onClickAction = null, float scale = 1)
             : base(assetManager, 0.6, relativeSize, sizeExpressedInX)
         {
             OnLeftClickAction = onClickAction;
 
-            CardTitle = new UiElement(null, assetManager.LoadFont("cardTitleFont"), Color.Black, 90, true, 3) { TextIsCentered = true };
-            CardText = new UiElement(null, assetManager.LoadFont("cardTextFont"), Color.Black, 94, true, 0.7);
-            CardCost = new UiElement(null, assetManager.LoadFont("cardCostFont"), Color.Black, 20, true, 1);
-            CardSubTypes = new UiElement(null, assetManager.LoadFont("cardTextFont"), Color.Black, 90, true, 4) { TextIsCentered = true };
-            CardCombatStats = new UiElement(null, assetManager.LoadFont("cardCombatStatsFont"), Color.Black, 30, true, 1.5);
-            CardCurrencyValue = new UiElement(null, assetManager.LoadFont("cardCurrencyValueFont"), Color.Black, 30, true, 1) { TextIsCentered = true };
+            CardTitle = new CardText(assetManager.LoadFont("cardTitleFont"), 96, 3, scale) 
+            { 
+                TextIsCentered = true,
+                ForceOneLine = true
+            };
+            CardText = new CardText(assetManager.LoadFont("cardTextFont"), 90, 0.7, scale);
+            CardCost = new CardText(assetManager.LoadFont("cardCostFont"), 20, 1, scale);
+            CardSubTypes = new CardText(assetManager.LoadFont("cardTextFont"), 90, 4, scale) 
+            { 
+                TextIsCentered = true,
+                ForceOneLine = true
+            };
+            CardCombatStats = new CardText(assetManager.LoadFont("cardCombatStatsFont"), 30, 1.5, scale);
+            CardCurrencyValue = new CardText(assetManager.LoadFont("cardCurrencyValueFont"), 30, 1, scale) 
+            { 
+                TextIsCentered = true 
+            };
 
-            SetCursor(5, 0);
+            SetCursor(2, 0);
             AddChild(CardTitle);
 
             SetCursor(6, 20);
@@ -43,7 +57,7 @@ namespace ACardGame.UI
             SetCursor(8, 90);
             AddChild(CardCost);
 
-            SetCursor(5, 75);
+            SetCursor(5, 76);
             AddChild(CardSubTypes);
 
             SetCursor(78, 90);
@@ -60,39 +74,21 @@ namespace ACardGame.UI
             Texture = AssetManager.LoadCardTexture(Card.GetMainType().ToString());
 
             CardTitle.Text = card.Name;
-            CardText.Text = "";
-
-            if (card.Text != null)
-            {
-                int lineIndex = 0;
-
-                foreach (string word in card.Text.Split(' '))
-                {
-                    lineIndex += word.Length;
-
-                    if (lineIndex > 19)
-                    {
-                        lineIndex = word.Length;
-                        CardText.Text += "\n";
-                    }
-
-                    CardText.Text += word + " ";
-                }
-            }
+            CardText.Text = card.Text;
 
             CardCost.Text = card.Cost.ToString();
             CardSubTypes.Text = string.Join(", ", card.GetSubTypes());
 
             if (card is CreatureCard creature)
             {
-                CardCombatStats.Text = $"{creature.Power}/{creature.Defense}";
+                CardCombatStats.Text = $"{creature.Power + creature.TemporaryAddedPower}/{creature.Defense + creature.TemporaryAddedDefense}";
             }
             else
             {
                 CardCombatStats.Text = "";
             }
 
-            if (card is CurrencyCard currency)
+            if (card is CurrencyCard currency && currency.CurrencyValue != 0)
             {
                 CardCurrencyValue.Text = currency.CurrencyValue.ToString();
             }
@@ -100,6 +96,11 @@ namespace ACardGame.UI
             {
                 CardCurrencyValue.Text = "";
             }
+        }
+
+        public void ToggleTargeted()
+        {
+            Card.IsTargeted = !Card.IsTargeted;
         }
 
         public void Clear()
@@ -116,10 +117,24 @@ namespace ACardGame.UI
 
         public override void Draw(SpriteBatch spriteBatch)
         {
+            if (Card?.Name == "Eva" && Card?.Counters > 0)
+            {
+                CardCurrencyValue.Text = Card.Counters.ToString();
+            }
+
             base.Draw(spriteBatch);
+
+            if (Card?.IsTargeted == true)
+            {
+                spriteBatch.Draw(AssetManager.LoadTexture("UI/selected"), AbsoluteLocation, Color.Magenta);
+            }
+            else if (Card?.IsTargeting == true)
+            {
+                spriteBatch.Draw(AssetManager.LoadTexture("UI/selected"), AbsoluteLocation, Color.Lime);
+            }
         }
 
-        protected override UiElement GetHoveredChildRecursive(Point position, UiContainer parent)
+        public override IHoverable Hover(Point position)
         {
             return this;
         }

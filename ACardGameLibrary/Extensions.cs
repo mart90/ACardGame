@@ -2,10 +2,17 @@
 {
     public static class Extensions
     {
-        public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> list)
+        private readonly static Random _rng = new();
+
+        public static void Shuffle<T>(this IList<T> list)
         {
-            var rng = new Random();
-            return list.OrderBy(e => rng.Next());
+            int n = list.Count;
+            while (n > 1)
+            {
+                n--;
+                int k = _rng.Next(n + 1);
+                (list[n], list[k]) = (list[k], list[n]);
+            }
         }
     }
 }

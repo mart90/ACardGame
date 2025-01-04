@@ -1,35 +1,79 @@
 ﻿using ACardGameLibrary;
+using System.Linq;
 
 namespace ACardGame.UI
 {
     public class Battlefield : UiContainer
     {
-        public Battlefield(AssetManager assetManager, double relativeSize, bool sizeExpressedInX)
-            : base(assetManager, 1.4, relativeSize, sizeExpressedInX)
-        {
-            Texture = assetManager.LoadTexture("UI/battlefield_background");
-            IsVisible = false;
+        public Button ActivePlayerSupportsButton { get; set; }
+        public Button EnemySupportsButton { get; set; }
 
-            //AttackingCreatures = new List<CardContainer>();
-            //DefendingCreatures = new List<CardContainer>();
-            //GlobalSupportsInPlay = new List<CardContainer>();
+        public Battlefield(AssetManager assetManager, double relativeSize, bool sizeExpressedInX)
+            : base(assetManager, 1.6, relativeSize, sizeExpressedInX)
+        {
+            Texture = assetManager.LoadTexture("UI/card_selector");
+            IsVisible = false;
+        }
+
+        public void AddButtons(HotSeatGame game)
+        {
+            SetCursor(0, 0);
+            EnemySupportsButton = new Button(AssetManager, ButtonType.Long, 15, true, "Supports", delegate
+            {
+                game.ShowSupportsInPlay(false);
+            })
+            {
+                IsVisible = false
+            };
+            AddChild(EnemySupportsButton);
+
+            SetCursor(0, 95.5);
+            ActivePlayerSupportsButton = new Button(AssetManager, ButtonType.Long, 15, true, "Supports", delegate
+            {
+                game.ShowSupportsInPlay(true);
+            })
+            {
+                IsVisible = false
+            };
+            AddChild(ActivePlayerSupportsButton);
         }
 
         public void Refresh(GameStateManager gameState)
         {
-            Children.Clear();
+            Children.RemoveAll(e => e is BattlefieldLane);
 
             var activePlayerIsAttacking = gameState.ActivePlayer.IsAttacking;
 
-            SetCursor(50 - 8 * gameState.AttackingCreatures.Count, activePlayerIsAttacking ? 67 : 0);
+            SetCursor(50 - 8 * gameState.AttackingCreatures.Count, 0);
 
             foreach (CreatureCard creature in gameState.AttackingCreatures)
             {
-                var container = new CardContainer(AssetManager, 14, true, null);
-                container.OnLeftClickAction = delegate { container.IsTargeted = true; };
-                container.SetCard(creature);
-                AddChild(container);
+                var lane = new BattlefieldLane(AssetManager, creature.BlockedBy.Any() ? creature.BlockedBy.Count * 12.5 : 12.5, true);
+                lane.Refresh(creature, activePlayerIsAttacking);
+                AddChild(lane);
                 AddSpacing(2.5);
+            }
+
+            var activePlayerSupports = gameState.GetPlayerSupports(true);
+            if (activePlayerSupports.Any())
+            {
+                ActivePlayerSupportsButton.IsVisible = true;
+                ActivePlayerSupportsButton.Text = $"Supports ({activePlayerSupports.Count})";
+            }
+            else
+            {
+                ActivePlayerSupportsButton.IsVisible = false;
+            }
+
+            var enemySupports = gameState.GetPlayerSupports(false);
+            if (enemySupports.Any())
+            {
+                EnemySupportsButton.IsVisible = true;
+                EnemySupportsButton.Text = $"Supports ({enemySupports.Count})";
+            }
+            else
+            {
+                EnemySupportsButton.IsVisible = false;
             }
         }
     }

@@ -6,22 +6,19 @@ namespace ACardGame.UI
 {
     public class Shop : UiContainer
     {
-        public List<CardContainer> Cards => Children.Where(e => e is CardContainer).Cast<CardContainer>().ToList();
+        public List<CardContainer> Cards => ChildrenOfType<CardContainer>().ToList();
 
         public Shop(AssetManager assetManager, double relativeSize, bool sizeExpressedInX)
-            : base(assetManager, 3, relativeSize, sizeExpressedInX)
+            : base(assetManager, 1.8, relativeSize, sizeExpressedInX)
         {
             IsVisible = true;
         }
 
         public void SetCards(List<Card> cards)
         {
-            List<CardContainer> containers = Children
-                .Where(e => e is CardContainer)
-                .Cast<CardContainer>()
-                .ToList();
+            List<CardContainer> containers = Cards.ToList();
 
-            foreach (var container in containers)
+            foreach (var container in Cards)
             {
                 container.Clear();
             }

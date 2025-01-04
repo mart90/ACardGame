@@ -1,25 +1,36 @@
-﻿namespace ACardGameLibrary
+﻿using System.Buffers;
+
+namespace ACardGameLibrary
 {
     public class GameStateManager
     {
-        public GameStateManager() 
+        public GameStateManager()
         {
             Players = new List<Player>()
             {
-                new("A") { IsActive = true },
-                new("B")
+                new("Player1") { IsActive = true },
+                new("Player2")
             };
 
-            RoundNumber = 1;
+            TurnNumber = 1;
 
             EventListeners = new List<GameEventListener>();
             AttackingCreatures = new List<CreatureCard>();
-            GlobalSupportsInPlay = new List<Card>();
+            CombatModifiers = new List<CombatModifier>();
+            CardsToChooseFromSelector = new List<Card>();
+            PublicLog = new List<GameLog>()
+            {
+                new GameLog("---- START ----"),
+                new GameLog("Player1's turn")
+            };
 
-            ShopPool = CardLibrary.GetStartingShop().Shuffle().ToList();
+            ShopPool = CardLibrary.GetStartingShop();
+            ShopPool.Shuffle();
 
-            CurrentShop = new List<Card>();
-            RefreshShop();
+            ShopDiscard = new List<Card>();
+
+            RefreshShop(ActivePlayer);
+            RefreshShop(Enemy);
         }
 
         public List<Player> Players { get; private set; }
@@ -32,31 +43,80 @@
 
         public List<GameEventListener> EventListeners { get; private set; }
 
-        public List<Card> CurrentShop { get; set; }
         public List<Card> ShopPool { get; set; }
+        public List<Card> ShopDiscard { get; set; }
 
-        public int RoundNumber;
+        public List<GameLog> PublicLog { get; set; }
+
+        public int TurnNumber;
 
         public bool IsInCombat { get; set; }
+        public bool CombatPassed { get; set; }
+
         public List<CreatureCard> AttackingCreatures { get; set; }
-        public List<Card> GlobalSupportsInPlay { get; set; }
+        public List<CombatModifier> CombatModifiers { get; set; }
+
+        public bool ActivateSelectorFlag { get; set; }
+        public bool RemoveSelectorFlag { get; set; }
+        public List<Card> CardsToChooseFromSelector { get; set; }
+        public List<Card> NonSelectedSelectorCards => CardsToChooseFromSelector.Where(e => !e.IsTargeted).ToList();
+
+        public bool RevealOpponentHand { get; set; }
+
+        public bool RequireAccept { get; set; }
+
+        public bool ResolvingAfterPlay { get; set; }
+        public int ResolvedEffects { get; set; }
+
+        public MessageToPlayerParams MessageToPlayer { get; set; }
+
+        public bool ActivateShopCostPickerFlag { get; set; }
+        public bool RemoveShopCostPickerFlag { get; set; }
+        public int ShopCostPicked { get; set; }
+
+        public List<string> OptionsPickerOptions { get; set; }
+        public bool RemoveOptionsPickerFlag { get; set; }
+        public List<string> OptionsPicked { get; set; }
+
+        public Card? CardGoingToDiscard { get; set; }
+        public Card? CardBeingBought { get; set; }
+
+        public int DamageBeingDealt { get; set; }
+
+        public Card? ActionQueued { get; set; }
+
+        public bool EinsteinResolvedFlag {  get; set; }
+
+        private List<Card> AllCards => ActivePlayer.AllCards().Concat(Enemy.AllCards()).Concat(ShopPool).Concat(ShopDiscard).ToList();
+        public List<Card> ActiveCombatCards => ActivePlayer.ActiveCombatCards.Concat(Enemy.ActiveCombatCards).ToList();
+        public List<SupportCard> ActiveGlobalSupports => ActiveCombatCards.Where(e => e is SupportCard && e is not Equipment).Cast<SupportCard>().ToList();
+        public List<Card> TargetedCards => AllCards.Where(e => e.IsTargeted).ToList();
+        public Card? TargetingCard => AllCards.SingleOrDefault(e => e.IsTargeting);
+        public Card? CardBeingPlayed => AllCards.SingleOrDefault(e => e.IsBeingPlayed);
 
         public bool CanPlayCard(bool isActivePlayer, Card card)
         {
             var type = card.GetMainType();
             var player = isActivePlayer ? ActivePlayer : Enemy;
 
-            if (!IsInCombat && type == CardType.Support)
+            if (!IsInCombat & card.IsCombatCard && player.HasAttackedThisRound)
             {
                 return false;
             }
 
-            if (!IsInCombat && type == CardType.Creature && player.HasAttackedThisRound)
+            if (!IsInCombat && (card is Equipment || (card is SupportCard support && !support.IsPermanent)))
             {
                 return false;
             }
 
-            if (IsInCombat && (type == CardType.Action || type == CardType.Currency))
+            if (IsInCombat && (type == CardType.Action || type == CardType.Currency || type == CardType.Leader))
+            {
+                return false;
+            }
+
+            if ((card.Name == "Assassin" || card.Name == "Copy" || card.Name == "Trebuchet")
+                && IsInCombat 
+                && !player.IsAttacking)
             {
                 return false;
             }
@@ -80,29 +140,46 @@
             Card card = param.Card;
             CardType type = card.GetMainType();
 
-            card.Effects.Where(e => e.EffectPhase == CardEffectPhase.OnPlay).SingleOrDefault()?.Effect(this, player);
+            card.IsBeingPlayed = true;
 
-            player.Hand.Remove(card);
+            if (type != CardType.Currency)
+            {
+                AddPublicLog($"{ActivePlayer.Name} played {card.Name}");
+            }
 
-            if (type == CardType.Creature && !IsInCombat)
+            if (card.IsCombatCard && !IsInCombat)
             {
                 IsInCombat = true;
                 player.IsAttacking = true;
                 player.HasAttackedThisRound = true;
+                TriggerEvent(GameEvent.StartingCombat);
             }
 
-            if (IsInCombat) 
-            {
-                PlayCardCombat(param);
-            }
-            else
-            {
-                player.DiscardPile.Add(card);
-            }
+            card.Effects.Where(e => e.EffectPhase == CardEffectPhase.OnPlay).SingleOrDefault()?.Effect(this, player);
+
+            player.Hand.Remove(card);
 
             if (type == CardType.Leader)
             {
                 PlayLeader(player, card);
+            }
+            else if (!IsInCombat || (card is SupportCard support && !support.IsPermanent))
+            {
+                ActivePlayer.CardsPlayedThisTurn.Add(card);
+            }
+            else
+            {
+                ActivePlayer.ActiveCombatCards.Add(card);
+            }
+            
+            if (IsInCombat && player.IsAttacking && card is CreatureCard creature)
+            {
+                AttackingCreatures.Add(creature);
+            }
+
+            if (IsInCombat)
+            {
+                CombatPassed = false;
             }
 
             switch (type)
@@ -114,39 +191,16 @@
                 case CardType.Leader: TriggerEvent(GameEvent.PlayingLeader); break;
             }
 
-            if (type != CardType.Currency)
+            if (IsInCombat && !RequireAccept)
             {
-                SwitchTurn();
+                SwitchActivePlayer();
             }
-        }
 
-        private void PlayCardCombat(PlayCardParams param)
-        {
-            Player player = param.IsActivePlayer ? ActivePlayer : Enemy;
-            Card card = param.Card;
-            CardType type = card.GetMainType();
+            card.IsBeingPlayed = false;
 
-            if (type == CardType.Creature)
+            if (card.Effects.Any(e => e.EffectPhase == CardEffectPhase.OnAcceptedAfterPlay))
             {
-                if (param.IsBlockingCreature == null)
-                {
-                    AttackingCreatures.Add((CreatureCard)card);
-                }
-                else
-                {
-                    param.IsBlockingCreature.BlockedBy.Add((CreatureCard)card);
-                }
-            }
-            else // Support
-            {
-                if (param.IsAttachingToCreature != null)
-                {
-                    param.IsAttachingToCreature.AttachedSupportCards.Add(card);
-                }
-                else
-                {
-                    GlobalSupportsInPlay.Add(card);
-                }
+                ResolvingAfterPlay = true;
             }
         }
 
@@ -163,31 +217,50 @@
         public void BuyCard(bool isActivePlayer, Card card)
         {
             Player player = isActivePlayer ? ActivePlayer : Enemy;
+            
+            CardBeingBought = card;
 
-            TriggerEvent(GameEvent.Buying);
+            card.Effects.SingleOrDefault(e => e.EffectPhase == CardEffectPhase.OnBuy)?.Effect(this, player);
 
             player.DiscardPile.Add(card);
             card.Owner = player;
 
             player.MoneyToSpend -= card.Cost.Value;
 
-            CurrentShop.Remove(card);
+            AddPublicLog($"{player.Name} bought {card.Name} for {card.Cost.Value} currency");
 
-            SwitchTurn();
+            ActivePlayer.Shop.Remove(card);
+
+            TriggerEvent(GameEvent.Buying);
+
+            CardBeingBought = null;
         }
 
-        public void Pass(Player player)
+        public bool PlayerIsFreeTradeBuying()
         {
-            player.IsPassed = true;
+            return ActivePlayer.CanFreeTrade
+                && TargetedCards.Any()
+                && !RequireAccept
+                && TargetingCard == null;
+        }
 
-            if (Players.Single(e => e != player).IsPassed)
+        public Card? TryBuyCardFromDiscardPile()
+        {
+            var card = TargetedCards.Single();
+            card.IsTargeted = false;
+
+            if (CanBuyCard(card))
             {
-                NewRound();
+                AddPublicLog($"{ActivePlayer.Name} is using Free trade to buy from a shop discard pile");
+
+                BuyCard(true, card);
+
+                ShopDiscard.Remove(card);
+
+                return card;
             }
-            else
-            {
-                SwitchTurn();
-            }
+
+            return null;
         }
 
         public void AddEventListener(GameEventListener listener)
@@ -195,93 +268,635 @@
             EventListeners.Add(listener);
         }
 
-        public void RemoveListener(string name)
+        public void RemoveListener(string name, Player owner = null)
         {
-            EventListeners.RemoveAll(e => e.Name == name);
+            var query = EventListeners.AsEnumerable();
+
+            if (owner != null)
+            {
+                query = query.Where(e => e.Owner == owner);
+            }
+
+            query = query.Where(e => e.Name == name);
+
+            var listener = query.FirstOrDefault();
+
+            if (listener == null)
+            {
+                return;
+            }
+
+            EventListeners.Remove(listener);
         }
 
-        private void TriggerEvent(GameEvent gameEvent)
+        /// <summary>
+        /// Returns true if the triggered event needs input from user
+        /// </summary>
+        public bool TriggerEvent(GameEvent gameEvent)
+        {
+            var triggeredListeners = new List<GameEventListener>(EventListeners.Where(e => e.Trigger == gameEvent && !e.IsTriggered && (!e.OwnersTurnOnly || e.Owner.IsActive)));
+
+            foreach (GameEventListener listener in triggeredListeners)
+            {
+                listener.Effect(this, listener.Owner);
+
+                if (listener.NeedsUserInput)
+                {
+                    listener.IsTriggered = true;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public void ResetTriggers(GameEvent gameEvent)
         {
             foreach (GameEventListener listener in EventListeners.Where(e => e.Trigger == gameEvent))
             {
-                listener.Effect(this, listener.Owner);
+                listener.IsTriggered = false;
             }
         }
 
-        private void SwitchTurn()
+        public void MoveToDiscard(Card card)
         {
-            // TODO OnTurnEnd card effects
+            CardGoingToDiscard = card;
+            card.Effects.SingleOrDefault(e => e.EffectPhase == CardEffectPhase.OnMoveToDiscard)?.Effect(this, card.Owner);
+            CardGoingToDiscard = null;
 
-            if (!Enemy.IsPassed)
+            card.Owner.DiscardPile.Add(card);
+        }
+
+        public void SwitchTurn()
+        {
+            foreach (Card card in ActivePlayer.CardsPlayedThisTurn)
             {
-                foreach (var player in Players)
-                {
-                    player.IsActive = !player.IsActive;
-                }
+                MoveToDiscard(card);
             }
+
+            ActivePlayer.CardsPlayedThisTurn.Clear();
+
+            if (TriggerEvent(GameEvent.EndingTurn))
+            {
+                return;
+            }
+
+            ResetTriggers(GameEvent.EndingTurn);
+
+            ActivePlayer.DrawCards(TurnNumber == 1 ? 2 : 3);
 
             ActivePlayer.MoneyToSpend = 0;
-        }
-
-        private void NewRound()
-        {
-            TriggerEvent(GameEvent.EndingRound);
-
-            RoundNumber++;
-            RefreshShop();
-
-            SwitchTurn();
+            ActivePlayer.HasAttackedThisRound = false;
+            ActivePlayer.FreeShopRefreshes = 1;
+            ActivePlayer.CanFreeTrade = false;
 
             foreach (var player in Players)
             {
-                player.IsPassed = false;
-                player.HasAttackedThisRound = false;
+                player.IsActive = !player.IsActive;
             }
 
-            TriggerEvent(GameEvent.StartingRound);
+            AddPublicLog($"{ActivePlayer.Name}'s turn");
+
+            TriggerEvent(GameEvent.StartingTurn);
+
+            TurnNumber++;
         }
 
-        private void RefreshShop()
+        public void SwitchActivePlayer()
         {
-            CurrentShop.Clear();
-
-            for (int cost = 2; cost <= 7; cost++)
+            foreach (var player in Players)
             {
-                for (int i = 0; i < GetAmountOfShopCards(cost); i++)
+                player.IsActive = !player.IsActive;
+            }
+        }
+
+        public void ResolveCombat()
+        {
+            if (TriggerEvent(GameEvent.ResolvingCombat))
+            {
+                return;
+            }
+
+            ResetTriggers(GameEvent.ResolvingCombat);
+
+            if (!ActivePlayer.IsAttacking)
+            {
+                SwitchActivePlayer();
+            }
+
+            int totalDamageDealt = 0;
+
+            foreach (var attacker in AttackingCreatures)
+            {
+                (int damageDealt, bool isSuccessfullyBlocked) = AttackerDamageDealt(attacker);
+
+                if (attacker.Name == "Assassin" && isSuccessfullyBlocked)
                 {
-                    var card = ShopPool.First(e => e.Cost == cost);
-                    CurrentShop.Add(card);
-                    ShopPool.Remove(card);
+                    Attacker.ActiveCombatCards.Remove(attacker);
+                    AddPublicLog("Assassin was exiled");
+                }
+
+                DealDamage(damageDealt);
+
+                if (DamageBeingDealt > 0)
+                {
+                    attacker.DealtDamage = true;
+                }
+
+                totalDamageDealt += DamageBeingDealt;
+            }
+
+            AddPublicLog($"Combat resolved. {ActivePlayer.Name} dealt {totalDamageDealt} damage");
+
+            ArchersDealDamage();
+
+            TriggerEvent(GameEvent.EndingCombat);
+
+            foreach (var creature in Attacker.ActiveCombatCards.Concat(Defender.ActiveCombatCards).Where(e => e is CreatureCard).Cast<CreatureCard>())
+            {
+                creature.Reset();
+            }
+
+            CombatModifiers.Clear();
+            AttackingCreatures.Clear();
+
+            foreach (var player in Players)
+            {
+                player.EndCombatCleanup();
+            }
+
+            IsInCombat = false;
+            ActivePlayer.IsAttacking = false;
+        }
+
+        public void DealDamage(int amount)
+        {
+            DamageBeingDealt = amount;
+            TriggerEvent(GameEvent.DealingDamage);
+            Enemy.Life -= DamageBeingDealt;
+
+            if (Enemy.Life < 0)
+            {
+                // TODO end the game
+            }
+        }
+
+        public int CreaturePower(CreatureCard creature)
+        {
+            int power = creature.Power + creature.TemporaryAddedPower;
+
+            foreach (var equipment in creature.AttachedEquipments)
+            {
+                power += equipment.AddedPower;
+            }
+
+            var modifiers = creature.Owner.IsAttacking ?
+                CombatModifiers.Where(e => e.Owner == Attacker || !e.OwnerOnly) 
+                : CombatModifiers.Where(e => e.Owner == Defender || !e.OwnerOnly);
+            
+            foreach (CombatModifier modifier in modifiers.Where(e => e.ConditionsEnemy == null))
+            {
+                if (modifier.CardMeetsConditions(creature))
+                {
+                    power += modifier.AddedPower;
                 }
             }
 
-            TriggerEvent(GameEvent.RefreshingShop);
+            return power;
         }
 
-        private int GetAmountOfShopCards(int cost)
+        public int CreatureDefense(CreatureCard creature)
         {
-            if (cost == 2)
+            int defense = creature.Defense + creature.TemporaryAddedDefense;
+
+            foreach (var equipment in creature.AttachedEquipments)
             {
-                return RoundNumber < 6 ? 6 - RoundNumber : 0;
+                defense += equipment.AddedDefense;
             }
 
-            int effectiveRoundNumber = RoundNumber <= 11 ? RoundNumber : 11;
+            var modifiers = creature.Owner.IsAttacking ?
+                CombatModifiers.Where(e => e.Owner == Attacker || !e.OwnerOnly)
+                : CombatModifiers.Where(e => e.Owner == Defender || !e.OwnerOnly);
 
-            int lowerBound = (cost - 2) * 2;
-            int upperBound = cost * 2 + 1;
-
-            if (effectiveRoundNumber > lowerBound && effectiveRoundNumber < upperBound)
+            foreach (CombatModifier modifier in modifiers.Where(e => e.ConditionsEnemy == null))
             {
-                return 2;
+                if (modifier.CardMeetsConditions(creature))
+                {
+                    defense += modifier.AddedDefense;
+                }
             }
-            else if (effectiveRoundNumber == lowerBound || effectiveRoundNumber == upperBound)
+
+            return defense;
+        }
+
+        public void RemoveIfDead(CreatureCard creature)
+        {
+            if (CreatureDefense(creature) > 0)
             {
-                return 1; 
+                return;
+            }
+
+            AddPublicLog($"{creature.Name} dropped to 0 defense and was removed from the battlefield");
+
+            RemoveCardFromBattlefield(creature);
+
+            if (creature.Owner.IsAttacking)
+            {
+                creature.Owner.CardsPlayedThisTurn.Add(creature);
             }
             else
             {
-                return 0;
+                MoveToDiscard(creature);
             }
+        }
+
+        private (int damageDealt, bool isSuccessfullyBlocked) AttackerDamageDealt(CreatureCard attacker)
+        {
+            int attackerPower = CreaturePower(attacker);
+            int attackerDefense = CreatureDefense(attacker);
+
+            int defendingPower = 0;
+            int defendingDefense = 0;
+
+            var attackerModifiers = CombatModifiers.Where(e => e.Owner == Attacker || !e.OwnerOnly);
+            var defenderModifiers = CombatModifiers.Where(e => e.Owner == Defender || !e.OwnerOnly);
+
+            foreach (var defender in attacker.BlockedBy)
+            {
+                if (attacker.Types.Contains(CardType.Flying)
+                    && !defender.Types.Contains(CardType.Flying)
+                    && !defender.Types.Contains(CardType.Ranged)
+                    && defender.Name != "Tree of life")
+                {
+                    continue;
+                }
+
+                foreach (CombatModifier modifier in attackerModifiers.Where(e => e.ConditionsEnemy != null))
+                {
+                    if (modifier.CardMeetsConditions(attacker) && modifier.EnemyMeetsConditions(defender))
+                    {
+                        attackerPower += modifier.AddedPower;
+                        attackerDefense += modifier.AddedDefense;
+                    }
+                }
+
+                defendingPower += CreaturePower(defender);
+                defendingDefense += CreatureDefense(defender);
+
+                foreach (CombatModifier modifier in defenderModifiers.Where(e => e.ConditionsEnemy != null))
+                {
+                    if (modifier.CardMeetsConditions(defender) && modifier.EnemyMeetsConditions(attacker))
+                    {
+                        defendingPower += modifier.AddedPower;
+                        defendingDefense += modifier.AddedDefense;
+                    }
+                }
+            }
+
+            if (attackerPower < 0)
+            {
+                attackerPower = 0;
+            }
+            if (defendingPower < 0)
+            {
+                defendingPower = 0;
+            }
+
+            if (attackerPower < defendingDefense)
+            {
+                return (0, true);
+            }
+            else if (attackerDefense <= defendingPower)
+            {
+                if (attacker.HasTrample)
+                {
+                    return (attackerPower - defendingDefense, true);
+                }
+                else
+                {
+                    return (0, true);
+                }
+            }
+            else if (attackerPower == 0) 
+            {
+                return (0, false);
+            }
+
+            return (attackerPower, false);
+        }
+
+        private void ArchersDealDamage()
+        {
+            foreach (var archer in AttackingCreatures.Where(e => e.Name == "Archer"))
+            {
+                int power = archer.Power + archer.TemporaryAddedPower;
+
+                foreach (CombatModifier modifier in CombatModifiers.Where(e => e.ConditionsEnemy == null && (e.Owner == Attacker || !e.OwnerOnly)))
+                {
+                    if (modifier.CardMeetsConditions(archer))
+                    {
+                        power += modifier.AddedPower;
+                    }
+                }
+
+                foreach (var equipment in archer.AttachedEquipments)
+                {
+                    power += equipment.AddedPower;
+                }
+
+                if (power < 0)
+                {
+                    power = 0;
+                }
+
+                DealDamage(power);
+
+                if (DamageBeingDealt > 0)
+                {
+                    archer.DealtDamage = true;
+                }
+
+                AddPublicLog($"Archer dealt {DamageBeingDealt} damage");
+            }
+        }
+
+        public List<SupportCard> GetPlayerSupports(bool isActivePlayer)
+        {
+            return ActiveGlobalSupports
+                .Where(e => isActivePlayer == (e.Owner == ActivePlayer))
+                .ToList();
+        }
+
+        public void RefreshShop(Player player)
+        {
+            TriggerEvent(GameEvent.RefreshingShop);
+
+            ShopDiscard.AddRange(player.Shop);
+            player.Shop.Clear();
+
+            int refreshCost = player.ShopRefreshCost;
+
+            for (int i = 0; i < 3; i++)
+            {
+                if (!ShopPool.Any(e => e.Cost == refreshCost))
+                {
+                    ShopDiscard.Shuffle();
+                    ShopPool.AddRange(ShopDiscard.Where(e => e.Cost == refreshCost).ToList());
+                    ShopDiscard.RemoveAll(e => e.Cost == refreshCost);
+                }
+
+                var card = ShopPool.FirstOrDefault(e => e.Cost == refreshCost);
+
+                if (card == null)
+                {
+                    break;
+                }
+
+                player.Shop.Add(card);
+                ShopPool.Remove(card);
+            }
+
+            TriggerEvent(GameEvent.RefreshedShop);
+        }
+
+        public bool IsValidTarget(Card card, Card target)
+        {
+            if (card.Owner == target.Owner && card.MustTargetEnemy)
+            {
+                return false;
+            }
+            else if (card.Owner != target.Owner && card.MustTargetFriend)
+            {
+                return false;
+            }
+
+            if (IsInCombat
+                && !card.Owner.IsAttacking 
+                && card is CreatureCard 
+                && target is CreatureCard attacker
+                && card.Owner != target.Owner
+                && !ResolvingAfterPlay
+                && !attacker.IsUnblockable
+                && (attacker.HasTaunt || !MustBlockTauntCreature()))
+            {
+                if (target.Name == "Horse archer")
+                {
+                    return card.Types.Contains(CardType.Ranged);
+                }
+
+                return true;
+            }
+
+            if (!card.ValidTargetTypes.Intersect(target.Types).Any())
+            {
+                return false;
+            }
+
+            if (card.AdditionalTargetConditions != null && (card is not CreatureCard || ResolvingAfterPlay) && !card.AdditionalTargetConditions(this, target))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool MustBlockTauntCreature()
+        {
+            return AttackingCreatures.Any(e => e.HasTaunt && !e.BlockedBy.Any());
+        }
+
+        public void BuySilver()
+        {
+            if (ActivePlayer.MoneyToSpend < 3)
+            {
+                return;
+            }
+
+            var card = CardLibrary.GetCard("Silver");
+
+            BuyCard(true, card);
+        }
+
+        public void BuyGold()
+        {
+            if (ActivePlayer.MoneyToSpend < 6)
+            {
+                return;
+            }
+
+            var card = CardLibrary.GetCard("Gold");
+
+            BuyCard(true, card);
+        }
+
+        public void ActionRefreshShop()
+        {
+            string payment = "1 currency";
+
+            if (ActivePlayer.FreeShopRefreshes > 0)
+            {
+                AddPublicLog($"{ActivePlayer.Name} refreshed their shop");
+                ActivePlayer.FreeShopRefreshes--;
+            }
+            else
+            {
+                if (ActivePlayer.MoneyToSpend >= 1)
+                {
+                    ActivePlayer.MoneyToSpend--;
+                }
+                else if (ActivePlayer.Life >= 3)
+                {
+                    ActivePlayer.Life -= 3;
+                    payment = "3 life";
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            AddPublicLog($"{ActivePlayer.Name} refreshed their shop for {payment}");
+
+            RefreshShop(ActivePlayer);
+        }
+
+        public void UpgradeShop()
+        {
+            ActivePlayer.UpgradeShop();
+            AddPublicLog($"{ActivePlayer.Name} upgraded their shop to level {ActivePlayer.ShopLevel}");
+        }
+
+        public void RemoveCardFromBattlefield(Card card)
+        {
+            card.Effects.SingleOrDefault(e => e.EffectPhase == CardEffectPhase.OnRemove)?.Effect(this, card.Owner);
+
+            if (card is CreatureCard creature)
+            {
+                RemoveCreatureFromBattlefield(creature);
+            }
+            else
+            {
+                RemoveSupportFromBattlefield((SupportCard)card);
+            }
+        }
+
+        private void RemoveCreatureFromBattlefield(CreatureCard creature)
+        {
+            foreach (SupportCard support in creature.AttachedEquipments)
+            {
+                RemoveCardFromBattlefield(support);
+
+                if (support.Owner.IsAttacking)
+                {
+                    support.Owner.CardsPlayedThisTurn.Add(support);
+                }
+                else
+                {
+                    MoveToDiscard(support);
+                }
+            }
+
+            creature.AttachedEquipments.Clear();
+
+            if (AttackingCreatures.Contains(creature))
+            {
+                AttackingCreatures.Remove(creature);
+
+                foreach (var blocker in creature.BlockedBy)
+                {
+                    RemoveCardFromBattlefield(blocker);
+                    MoveToDiscard(blocker);
+                }
+
+                creature.BlockedBy.Clear();
+            }
+            else
+            {
+                foreach (CreatureCard attackingCreature in AttackingCreatures)
+                {
+                    if (attackingCreature.BlockedBy.Contains(creature))
+                    {
+                        attackingCreature.BlockedBy.Remove(creature);
+                    }
+                }
+            }
+
+            creature.Owner.ActiveCombatCards.Remove(creature);
+            creature.Reset();
+        }
+
+        private void RemoveSupportFromBattlefield(SupportCard support)
+        {
+            support.Owner.ActiveCombatCards.Remove(support);
+
+            if (support is Equipment equipment)
+            {
+                foreach (CreatureCard attacker in AttackingCreatures)
+                {
+                    if (attacker.AttachedEquipments.Contains(equipment))
+                    {
+                        attacker.AttachedEquipments.Remove(equipment);
+                        break;
+                    }
+
+                    foreach (CreatureCard blocker in attacker.BlockedBy)
+                    {
+                        if (blocker.AttachedEquipments.Contains(equipment))
+                        {
+                            blocker.AttachedEquipments.Remove(equipment);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        public void SetTargetingCard(Card card)
+        {
+            card.IsTargeting = true;
+            RequireAccept = true;
+        }
+
+        public void CardBeingPlayedIsTargeting()
+        {
+            CardBeingPlayed.IsTargeting = true;
+            RequireAccept = true;
+        }
+
+        public void PlayActionQueued()
+        {
+            ActionQueued.Owner.Hand.Add(ActionQueued);
+
+            PlayCard(new PlayCardParams
+            {
+                Card = ActionQueued,
+                IsActivePlayer = true
+            });
+
+            ActionQueued = null;
+        }
+
+        public void Worship()
+        {
+            var eva = ActivePlayer.Leader;
+
+            if (ActivePlayer.MoneyToSpend < 6)
+            {
+                return;
+            }
+
+            eva.Counters++;
+            ActivePlayer.MoneyToSpend -= 6;
+
+            if (eva.Counters == 10)
+            {
+                // TODO end the game
+            }
+        }
+
+        public void AddPublicLog(string message)
+        {
+            PublicLog.Add(new GameLog(message));
         }
     }
 }

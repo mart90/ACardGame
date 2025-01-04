@@ -8,7 +8,7 @@ namespace ACardGame.UI
 {
     public class UiContainer : UiElement
     {
-        public List<UiElement> Children { get; }
+        protected readonly List<UiElement> Children;
 
         public PointDouble Cursor { get; set; }
 
@@ -73,6 +73,16 @@ namespace ACardGame.UI
             Cursor = new PointDouble(x, y);
         }
 
+        public void SetCursorY(double y)
+        {
+            Cursor = new PointDouble(Cursor.X, y);
+        }
+
+        public void SetCursorX(double x)
+        {
+            Cursor = new PointDouble(x, Cursor.Y);
+        }
+
         private void SetCursor()
         {
             var lastChild = Children.Last();
@@ -92,6 +102,21 @@ namespace ACardGame.UI
             }
 
             Cursor = new PointDouble(x, y);
+        }
+
+        protected void ClearChildren()
+        {
+            Children.Clear();
+        }
+
+        protected IEnumerable<UiElement> FilterChildren(Func<UiElement, bool> filter)
+        {
+            return Children.Where(filter);
+        }
+
+        protected IEnumerable<T> ChildrenOfType<T>()
+        {
+            return Children.OfType<T>();
         }
 
         public void GoRight()
@@ -126,9 +151,7 @@ namespace ACardGame.UI
 
         public virtual void LeftClick(Point position)
         {
-            var child = Children
-                .Where(e => e.AbsoluteLocation.Contains(position) && e.IsVisible)
-                .FirstOrDefault();
+            var child = GetChildByPosition(position);
 
             if (child == null)
             {
@@ -147,48 +170,76 @@ namespace ACardGame.UI
 
         public virtual void RightClick(Point position)
         {
-            var child = Children
-                .Where(e => e.AbsoluteLocation.Contains(position) && e.IsVisible)
-                .FirstOrDefault();
+            var child = GetChildByPosition(position);
 
             if (child == null)
             {
                 return;
             }
 
-            // TODO
+            if (child is IRightClickable clickableChild && clickableChild.OnRightClickAction != null)
+            {
+                clickableChild.OnRightClickAction();
+            }
+            else if (child is UiContainer childContainer)
+            {
+                childContainer.RightClick(position);
+            }
         }
 
-        public virtual void Hover(Point position)
+        public virtual IHoverable Hover(Point position)
         {
-            var child = GetHoveredChildRecursive(position, this);
+            var child = GetChildByPosition(position);
 
-            if (child == this)
+            if (child is UiContainer childContainer)
+            {
+                return childContainer.Hover(position);
+            }
+            else if (child is IHoverable hoverableChild) 
+            {
+                return hoverableChild;
+            }
+
+            return this is IHoverable thisHoverable ? thisHoverable : null;
+        }
+
+        public virtual void ScrollUp(Point position)
+        {
+            var child = GetChildByPosition(position);
+
+            if (child == null)
             {
                 return;
             }
 
-            // TODO
+            if (child is UiContainer childContainer)
+            {
+                childContainer.ScrollUp(position);
+            }
         }
 
-        protected virtual UiElement GetHoveredChildRecursive(Point position, UiContainer parent)
+        public virtual void ScrollDown(Point position) 
         {
-            var child = parent.Children
-                .Where(e => e.AbsoluteLocation.Contains(position) && e.IsVisible)
-                .FirstOrDefault();
+            var child = GetChildByPosition(position);
 
             if (child == null)
             {
-                return parent;
+                return;
             }
-            else if (child is UiContainer container)
+
+            if (child is UiContainer childContainer)
             {
-                return container.GetHoveredChildRecursive(position, container);
+                childContainer.ScrollDown(position);
             }
-            else
-            {
-                return child;
-            }
+        }
+
+        private UiElement GetChildByPosition(Point position)
+        {
+            return Children
+                .Where(e => e.AbsoluteLocation.Contains(position) && e.IsVisible
+                    && !(e is CardContainer cc && cc.Card == null))
+                .OrderByDescending(e => e.DrawLayer)
+                .FirstOrDefault();
         }
 
         public override void Draw(SpriteBatch spriteBatch)
@@ -200,7 +251,7 @@ namespace ACardGame.UI
 
             base.Draw(spriteBatch);
 
-            foreach (var child in Children)
+            foreach (var child in Children.OrderBy(e => e.DrawLayer))
             {
                 int childX = (int)(AbsoluteLocation.X + child.RelativeLocationInParent.X * AbsoluteLocation.Width / 100);
                 int childY = (int)(AbsoluteLocation.Y + child.RelativeLocationInParent.Y * AbsoluteLocation.Height / 100);
@@ -211,6 +262,30 @@ namespace ACardGame.UI
                 child.AbsoluteLocation = new Rectangle(childX, childY, childWidth, childHeight);
 
                 child.Draw(spriteBatch);
+            }
+        }
+
+        protected void AddCardContainersRecursive(List<CardContainer> cards)
+        {
+            var cardContainers = Children
+                .Where(e => e is CardContainer)
+                .Cast<CardContainer>();
+
+            foreach (CardContainer c in cardContainers)
+            {
+                if (!cards.Contains(c))
+                {
+                    cards.Add(c);
+                }
+            }
+
+            var uiContainers = Children
+                .Where(e => e is UiContainer && e is not CardContainer)
+                .Cast<UiContainer>();
+
+            foreach (UiContainer child in uiContainers)
+            {
+                child.AddCardContainersRecursive(cards);
             }
         }
     }

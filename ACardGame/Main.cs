@@ -20,6 +20,9 @@ namespace ACardGame
 
         private bool _leftMouseHeld;
         private bool _rightMouseHeld;
+        private int _lastScrollWheelValue;
+
+        private IHoverable _hoveredElement;
 
         //private readonly NetManager _client;
 
@@ -118,9 +121,31 @@ namespace ACardGame
                 _activeWindow.RightClick(mouseState.Position);
             }
 
+            if (mouseState.ScrollWheelValue > _lastScrollWheelValue)
+            {
+                _activeWindow.ScrollUp(mouseState.Position);
+            }
+            else if (mouseState.ScrollWheelValue < _lastScrollWheelValue)
+            {
+                _activeWindow.ScrollDown(mouseState.Position);
+            }
+
+            _lastScrollWheelValue = mouseState.ScrollWheelValue;
+
             if (mouseState.RightButton == ButtonState.Released && mouseState.LeftButton == ButtonState.Released)
             {
-                _activeWindow.Hover(mouseState.Position);
+                var hoveredElement = _activeWindow.Hover(mouseState.Position);
+
+                if (_hoveredElement != null)
+                {
+                    _hoveredElement.IsHovered = false;
+                }
+
+                if (hoveredElement != null)
+                {
+                    _hoveredElement = hoveredElement;
+                    _hoveredElement.IsHovered = true;
+                }
             }
         }
 

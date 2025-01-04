@@ -18,25 +18,42 @@
 
     public enum GameEvent
     {
-        StartingRound,
-        EndingRound,
+        StartingTurn,
+        EndingTurn,
+
         RefreshingShop,
+        RefreshedShop,
+
         StartingCombat,
         ResolvingCombat,
+        DealingDamage,
         EndingCombat,
+
         PlayingAction,
         PlayingSupport,
         PlayingCreature,
         PlayingLeader,
         PlayingCurrency,
-        DealingDamage,
-        Investing,
-        Buying
+
+        Buying,
+        DrawingCardsFromCardEffect,
+        DoneResolving
     }
 
     public enum CardEffectPhase
     {
+        OnBuy,
         OnPlay,
-        OnTurnEnd
+        OnMoveToDiscard,
+        OnAccepted,
+        OnAcceptedAfterPlay,
+        OnRemove
+    }
+
+    public enum MessageSeverity
+    {
+        Information,
+        Warning,
+        Error
     }
 }
