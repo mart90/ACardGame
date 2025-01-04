@@ -16,7 +16,7 @@
 
         public List<CardEffect> Effects { get; set; }
 
-        public Player Owner { get; set; }
+        public Player? Owner { get; set; }
 
         public bool TargetsOnPlay { get; set; }
 

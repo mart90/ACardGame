@@ -17,7 +17,7 @@ namespace ACardGame.UI
             ScaleLevel = 0;
         }
 
-        public void SetContainers(HotSeatGame game)
+        public void SetContainers(GameWindow game)
         {
             ClearChildren();
 
@@ -42,7 +42,7 @@ namespace ACardGame.UI
             }
         }
 
-        public void SetCards(List<Card> cards, HotSeatGame game)
+        public void SetCards(List<Card> cards, GameWindow game)
         {
             int scaleLevel = cards.Count <= 12 ? 0 : (int)Math.Ceiling((double)(cards.Count - 12) / 3);
 

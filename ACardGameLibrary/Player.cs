@@ -17,32 +17,16 @@
             ActiveCombatCards = new List<Card>();
             Hand = new List<Card>
             {
-                CardLibrary.GetCard("Gold"),
-                CardLibrary.GetCard("Gold"),
-                CardLibrary.GetCard("Gold"),
-                CardLibrary.GetCard("Tree of life"),
-                CardLibrary.GetCard("Swordsman"),
-                CardLibrary.GetCard("Cancel"),
-                CardLibrary.GetCard("Snipe"),
-                CardLibrary.GetCard("Assassin"),
-                CardLibrary.GetCard("Inspiration"),
-                CardLibrary.GetCard("Wall"),
-                CardLibrary.GetCard("Barrage"),
-                CardLibrary.GetCard("Champion"),
-                CardLibrary.GetCard("Pegasus"),
-                CardLibrary.GetCard("Free trade"),
+                CardLibrary.GetCard("Silver"),
+                CardLibrary.GetCard("Silver"),
+                CardLibrary.GetCard("Silver"),
+                CardLibrary.GetCard("Silver")
             };
 
             foreach (var card in Hand)
             {
                 card.Owner = this;
             }
-
-            DiscardPile.Add(Hand[3]);
-            DiscardPile.Add(Hand[4]);
-
-            Hand.RemoveAt(3);
-            Hand.RemoveAt(3);
         }
 
         public string Name { get; set; }

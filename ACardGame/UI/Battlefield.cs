@@ -15,7 +15,7 @@ namespace ACardGame.UI
             IsVisible = false;
         }
 
-        public void AddButtons(HotSeatGame game)
+        public void AddButtons(GameWindow game)
         {
             SetCursor(0, 0);
             EnemySupportsButton = new Button(AssetManager, ButtonType.Long, 15, true, "Supports", delegate

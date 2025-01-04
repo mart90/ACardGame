@@ -99,6 +99,11 @@ namespace ACardGameLibrary
             var type = card.GetMainType();
             var player = isActivePlayer ? ActivePlayer : Enemy;
 
+            if (card is CreatureCard creature && creature.IsUnplayable)
+            {
+                return false;
+            }
+
             if (!IsInCombat & card.IsCombatCard && player.HasAttackedThisRound)
             {
                 return false;
