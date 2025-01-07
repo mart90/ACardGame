@@ -3,8 +3,11 @@
     public enum UiState
     {
         MainMenu,
-        LobbyBrowser,
         HotSeatGame,
+
+        LoginScreen,
+        MultiplayerHome,
+        MultiplayerGame,
     }
 
     public enum Direction

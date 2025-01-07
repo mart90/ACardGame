@@ -46,7 +46,6 @@
         public void Reset()
         {
             IsUnblockable = false;
-            IsUnplayable = false;
             DealtDamage = false;
 
             BlockedBy.Clear();

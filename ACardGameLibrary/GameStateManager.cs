@@ -1,6 +1,4 @@
-﻿using System.Buffers;
-
-namespace ACardGameLibrary
+﻿namespace ACardGameLibrary
 {
     public class GameStateManager
     {
@@ -18,19 +16,11 @@ namespace ACardGameLibrary
             AttackingCreatures = new List<CreatureCard>();
             CombatModifiers = new List<CombatModifier>();
             CardsToChooseFromSelector = new List<Card>();
-            PublicLog = new List<GameLog>()
-            {
-                new GameLog("---- START ----"),
-                new GameLog("Player1's turn")
-            };
+
+            PublicLog = new List<GameLog>() { new("---- START ----") };
 
             ShopPool = CardLibrary.GetStartingShop();
-            ShopPool.Shuffle();
-
             ShopDiscard = new List<Card>();
-
-            RefreshShop(ActivePlayer);
-            RefreshShop(Enemy);
         }
 
         public List<Player> Players { get; private set; }
@@ -87,12 +77,17 @@ namespace ACardGameLibrary
 
         public bool EinsteinResolvedFlag {  get; set; }
 
-        private List<Card> AllCards => ActivePlayer.AllCards().Concat(Enemy.AllCards()).Concat(ShopPool).Concat(ShopDiscard).ToList();
+        public List<Card> AllCards => ActivePlayer.AllCards().Concat(Enemy.AllCards()).Concat(ShopPool).Concat(ShopDiscard).ToList();
         public List<Card> ActiveCombatCards => ActivePlayer.ActiveCombatCards.Concat(Enemy.ActiveCombatCards).ToList();
         public List<SupportCard> ActiveGlobalSupports => ActiveCombatCards.Where(e => e is SupportCard && e is not Equipment).Cast<SupportCard>().ToList();
         public List<Card> TargetedCards => AllCards.Where(e => e.IsTargeted).ToList();
         public Card? TargetingCard => AllCards.SingleOrDefault(e => e.IsTargeting);
         public Card? CardBeingPlayed => AllCards.SingleOrDefault(e => e.IsBeingPlayed);
+
+        public Card GetCardById(int id)
+        {
+            return AllCards.Single(e => e.Id == id);
+        }
 
         public bool CanPlayCard(bool isActivePlayer, Card card)
         {
@@ -139,10 +134,9 @@ namespace ACardGameLibrary
             return true;
         }
 
-        public void PlayCard(PlayCardParams param)
+        public void PlayCard(Card card)
         {
-            Player player = param.IsActivePlayer ? ActivePlayer : Enemy;
-            Card card = param.Card;
+            Player player = ActivePlayer;
             CardType type = card.GetMainType();
 
             card.IsBeingPlayed = true;
@@ -168,9 +162,13 @@ namespace ACardGameLibrary
             {
                 PlayLeader(player, card);
             }
-            else if (!IsInCombat || (card is SupportCard support && !support.IsPermanent))
+            else if (!IsInCombat || (card is SupportCard support && !support.IsPermanent && ActivePlayer.IsAttacking))
             {
                 ActivePlayer.CardsPlayedThisTurn.Add(card);
+            }
+            else if (card is SupportCard s && !s.IsPermanent)
+            {
+                MoveToDiscard(s);
             }
             else
             {
@@ -219,9 +217,9 @@ namespace ACardGameLibrary
             player.Leader = card;
         }
 
-        public void BuyCard(bool isActivePlayer, Card card)
+        public void BuyCard(Card card)
         {
-            Player player = isActivePlayer ? ActivePlayer : Enemy;
+            Player player = ActivePlayer;
             
             CardBeingBought = card;
 
@@ -241,9 +239,9 @@ namespace ACardGameLibrary
             CardBeingBought = null;
         }
 
-        public bool PlayerIsFreeTradeBuying()
+        public bool PlayerIsFreeTradeBuying(Player player)
         {
-            return ActivePlayer.CanFreeTrade
+            return player.CanFreeTrade
                 && TargetedCards.Any()
                 && !RequireAccept
                 && TargetingCard == null;
@@ -258,7 +256,7 @@ namespace ACardGameLibrary
             {
                 AddPublicLog($"{ActivePlayer.Name} is using Free trade to buy from a shop discard pile");
 
-                BuyCard(true, card);
+                BuyCard(card);
 
                 ShopDiscard.Remove(card);
 
@@ -358,6 +356,12 @@ namespace ACardGameLibrary
             foreach (var player in Players)
             {
                 player.IsActive = !player.IsActive;
+            }
+
+            var allCreaturesInHands = ActivePlayer.Hand.Concat(Enemy.Hand).Where(e => e is CreatureCard).Cast<CreatureCard>();
+            foreach (var creature in allCreaturesInHands)
+            {
+                creature.IsUnplayable = false;
             }
 
             AddPublicLog($"{ActivePlayer.Name}'s turn");
@@ -625,6 +629,21 @@ namespace ACardGameLibrary
             }
         }
 
+        public void CombatPass()
+        {
+            AddPublicLog($"{ActivePlayer.Name} passed");
+
+            if (CombatPassed)
+            {
+                ResolveCombat();
+            }
+            else
+            {
+                CombatPassed = true;
+                SwitchActivePlayer();
+            }
+        }
+
         public List<SupportCard> GetPlayerSupports(bool isActivePlayer)
         {
             return ActiveGlobalSupports
@@ -719,7 +738,7 @@ namespace ACardGameLibrary
 
             var card = CardLibrary.GetCard("Silver");
 
-            BuyCard(true, card);
+            BuyCard(card);
         }
 
         public void BuyGold()
@@ -731,13 +750,11 @@ namespace ACardGameLibrary
 
             var card = CardLibrary.GetCard("Gold");
 
-            BuyCard(true, card);
+            BuyCard(card);
         }
 
         public void ActionRefreshShop()
         {
-            string payment = "1 currency";
-
             if (ActivePlayer.FreeShopRefreshes > 0)
             {
                 AddPublicLog($"{ActivePlayer.Name} refreshed their shop");
@@ -745,6 +762,8 @@ namespace ACardGameLibrary
             }
             else
             {
+                string payment = "1 currency";
+
                 if (ActivePlayer.MoneyToSpend >= 1)
                 {
                     ActivePlayer.MoneyToSpend--;
@@ -758,9 +777,9 @@ namespace ACardGameLibrary
                 {
                     return;
                 }
-            }
 
-            AddPublicLog($"{ActivePlayer.Name} refreshed their shop for {payment}");
+                AddPublicLog($"{ActivePlayer.Name} refreshed their shop for {payment}");
+            }
 
             RefreshShop(ActivePlayer);
         }
@@ -787,7 +806,7 @@ namespace ACardGameLibrary
 
         private void RemoveCreatureFromBattlefield(CreatureCard creature)
         {
-            foreach (SupportCard support in creature.AttachedEquipments)
+            foreach (SupportCard support in new List<Equipment>(creature.AttachedEquipments))
             {
                 RemoveCardFromBattlefield(support);
 
@@ -807,7 +826,7 @@ namespace ACardGameLibrary
             {
                 AttackingCreatures.Remove(creature);
 
-                foreach (var blocker in creature.BlockedBy)
+                foreach (var blocker in new List<CreatureCard>(creature.BlockedBy))
                 {
                     RemoveCardFromBattlefield(blocker);
                     MoveToDiscard(blocker);
@@ -868,15 +887,11 @@ namespace ACardGameLibrary
             RequireAccept = true;
         }
 
-        public void PlayActionQueued()
+        public virtual void PlayActionQueued()
         {
             ActionQueued.Owner.Hand.Add(ActionQueued);
 
-            PlayCard(new PlayCardParams
-            {
-                Card = ActionQueued,
-                IsActivePlayer = true
-            });
+            PlayCard(ActionQueued);
 
             ActionQueued = null;
         }

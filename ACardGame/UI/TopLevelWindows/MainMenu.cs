@@ -1,10 +1,8 @@
-﻿using Microsoft.Xna.Framework;
-
-namespace ACardGame.UI
+﻿namespace ACardGame.UI
 {
     public class MainMenu : TopLevelUiWindow
     {
-        public MainMenu(Rectangle absoluteLocation, AssetManager assetManager) : base(absoluteLocation, assetManager)
+        public MainMenu(AssetManager assetManager) : base(assetManager)
         {
             CorrespondingUiState = UiState.MainMenu;
             Texture = assetManager.LoadTexture("UI/wallpaper");
@@ -22,7 +20,7 @@ namespace ACardGame.UI
 
             AddChild(new Button(assetManager, ButtonType.Long, 10, true, "Multiplayer", delegate
             {
-                NewUiState = UiState.LobbyBrowser;
+                NewUiState = UiState.LoginScreen;
             }));
         }
     }

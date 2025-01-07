@@ -38,18 +38,16 @@ namespace ACardGame.UI
             AddChild(ActivePlayerSupportsButton);
         }
 
-        public void Refresh(GameStateManager gameState)
+        public void Refresh(GameStateManager gameState, bool playerIsAttacking)
         {
             Children.RemoveAll(e => e is BattlefieldLane);
-
-            var activePlayerIsAttacking = gameState.ActivePlayer.IsAttacking;
 
             SetCursor(50 - 8 * gameState.AttackingCreatures.Count, 0);
 
             foreach (CreatureCard creature in gameState.AttackingCreatures)
             {
                 var lane = new BattlefieldLane(AssetManager, creature.BlockedBy.Any() ? creature.BlockedBy.Count * 12.5 : 12.5, true);
-                lane.Refresh(creature, activePlayerIsAttacking);
+                lane.Refresh(creature, playerIsAttacking);
                 AddChild(lane);
                 AddSpacing(2.5);
             }

@@ -151,6 +151,13 @@ namespace ACardGame.UI
 
         public virtual void LeftClick(Point position)
         {
+            var focusedTextbox = FocusedTextbox();
+
+            if (focusedTextbox != null)
+            {
+                focusedTextbox.HasFocus = false;
+            }
+
             var child = GetChildByPosition(position);
 
             if (child == null)
@@ -233,7 +240,7 @@ namespace ACardGame.UI
             }
         }
 
-        private UiElement GetChildByPosition(Point position)
+        protected UiElement GetChildByPosition(Point position)
         {
             return Children
                 .Where(e => e.AbsoluteLocation.Contains(position) && e.IsVisible
@@ -286,6 +293,30 @@ namespace ACardGame.UI
             foreach (UiContainer child in uiContainers)
             {
                 child.AddCardContainersRecursive(cards);
+            }
+        }
+
+        private TextInput FocusedTextbox()
+        {
+            return (TextInput)Children.SingleOrDefault(e => e is TextInput tb && tb.HasFocus);
+        }
+
+        public virtual void ReceiveKeyboardInput(TextInputEventArgs args)
+        {
+            var focusedTextBox = FocusedTextbox();
+
+            if (focusedTextBox == null)
+            {
+                return;
+            }
+
+            if (args.Key == Microsoft.Xna.Framework.Input.Keys.Back && focusedTextBox.Text != "")
+            {
+                focusedTextBox.Text = focusedTextBox.Text.Substring(0, focusedTextBox.Text.Length - 1);
+            }
+            else if (char.IsLetterOrDigit(args.Character))
+            {
+                focusedTextBox.Text += args.Character;
             }
         }
     }

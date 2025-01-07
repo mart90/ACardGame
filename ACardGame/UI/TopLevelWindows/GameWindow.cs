@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Forms;
 
 namespace ACardGame.UI
 {
@@ -33,6 +34,8 @@ namespace ACardGame.UI
 
         public UiElement Life { get; set; }
         public UiElement EnemyLife { get; set; }
+        public TextArea PlayerName { get; set; }
+        public TextArea EnemyName { get; set; }
 
         public UiElement MoneyToSpend { get; set; }
 
@@ -63,23 +66,21 @@ namespace ACardGame.UI
 
         public bool ShopEnabled { get; set; }
 
-        public GameWindow(Rectangle absoluteLocation, AssetManager assetManager, GameStateManager gameStateManager)
-            : base(absoluteLocation, assetManager)
+        public abstract Player Player { get; }
+        public abstract Player Enemy { get; }
+        public abstract bool IsMyTurn { get; }
+        
+        public GameWindow(AssetManager assetManager, GameStateManager gameStateManager)
+            : base(assetManager)
         {
-            CorrespondingUiState = UiState.HotSeatGame;
-            Texture = assetManager.LoadTexture("UI/wallpaper");
             GameState = gameStateManager;
             ShopEnabled = true;
 
             ViewShopDiscardButtons = new List<Button>();
             ShopRefreshCostButtons = new List<Button>();
-
-            BuildUI();
-
-            Update();
         }
 
-        private void BuildUI()
+        public void BuildUI()
         {
             GoRight();
 
@@ -98,13 +99,22 @@ namespace ACardGame.UI
             AddChild(MoneyToSpend);
 
             // Life
-            SetCursor(73, 48);
+            SetCursor(68, 48);
             Life = new UiElement(AssetManager.LoadTexture("UI/life"), AssetManager.LoadFont("buttonFont"), Color.Black, 4) 
             { 
                 Text = "20",
                 TextIsCentered = true
             };
             AddChild(Life);
+
+            AddSpacing(0.5);
+            // Name
+            PlayerName = new TextArea(AssetManager, "messageFont", 15, true, 10)
+            {
+                Text = Player.Name,
+                ForceOneLine = true
+            };
+            AddChild(PlayerName);
 
             // Leader
             SetCursor(60, 55);
@@ -189,13 +199,22 @@ namespace ACardGame.UI
             AddChild(EnemyShop);
 
             // Enemy life
-            SetCursor(73, 23);
+            SetCursor(68, 23);
             EnemyLife = new UiElement(AssetManager.LoadTexture("UI/life"), AssetManager.LoadFont("buttonFont"), Color.Black, 4)
             {
                 Text = "20",
                 TextIsCentered = true
             };
             AddChild(EnemyLife);
+
+            AddSpacing(0.5);
+            // Enemy name
+            EnemyName = new TextArea(AssetManager, "messageFont", 15, true, 10)
+            {
+                Text = Enemy.Name,
+                ForceOneLine = true
+            };
+            AddChild(EnemyName);
 
             // Card stack viewer
             SetCursor(40, 3);
@@ -221,13 +240,13 @@ namespace ACardGame.UI
             SetCursor(89, 30);
             WorshipButton = new Button(AssetManager, ButtonType.Long, 10, true, "Worship", delegate
             {
-                GameState.Worship();
+                Worship();
             });
             AddChild(WorshipButton);
             AddSpacing(1);
             BuyGoldButton = new Button(AssetManager, ButtonType.Long, 10, true, "Buy gold (6)", delegate
             {
-                GameState.BuyGold();
+                BuyGold();
             });
             AddChild(BuyGoldButton);
             AddSpacing(1);
@@ -239,13 +258,13 @@ namespace ACardGame.UI
             AddSpacing(1);
             BuySilverButton = new Button(AssetManager, ButtonType.Long, 10, true, "Buy silver (3)", delegate
             {
-                GameState.BuySilver();
+                BuySilver();
             });
             AddChild(BuySilverButton);
             AddSpacing(1);
             RefreshShopButton = new Button(AssetManager, ButtonType.Long, 10, true, "Refresh shop", delegate
             {
-                GameState.ActionRefreshShop();
+                ActionRefreshShop();
             });
             AddChild(RefreshShopButton);
             AddSpacing(1);
@@ -309,7 +328,8 @@ namespace ACardGame.UI
             SetCursor(1.5, 65);
             ViewShopDiscardText = new TextArea(AssetManager, "buttonFont", 9, true, 5)
             {
-                Text = "View shop discard"
+                Text = "View shop discard",
+                ForceOneLine = true
             };
             AddChild(ViewShopDiscardText);
 
@@ -367,29 +387,26 @@ namespace ACardGame.UI
             SetCursor(81.2, 75.2);
             ShowCardsPlayedThisTurnButton = new Button(AssetManager, ButtonType.Short, 1.7, true, "...", delegate
             {
-                CardStackViewer.Show(GameState.ActivePlayer.CardsPlayedThisTurn);
+                CardStackViewer.Show(Player.CardsPlayedThisTurn);
             });
             AddChild(ShowCardsPlayedThisTurnButton);
 
             RefreshHand();
         }
 
-        private void EndTurn()
+        public void PrepareShop()
+        {
+            GameState.ShopPool.Shuffle();
+
+            GameState.RefreshShop(GameState.ActivePlayer);
+            GameState.RefreshShop(GameState.Enemy);
+        }
+
+        protected virtual void EndTurn()
         {
             if (GameState.IsInCombat)
             {
-                GameState.AddPublicLog($"{GameState.ActivePlayer.Name} passed");
-
-                if (GameState.CombatPassed)
-                {
-                    GameState.ResolveCombat();
-                }
-                else
-                {
-                    GameState.CombatPassed = true;
-
-                    GameState.SwitchActivePlayer();
-                }
+                GameState.CombatPass();
             }
             else
             {
@@ -442,17 +459,13 @@ namespace ACardGame.UI
                 }
                 else
                 {
-                    GameState.PlayCard(new PlayCardParams
-                    {
-                        Card = card,
-                        IsActivePlayer = true
-                    });
+                    PlayCard(card);
                 }
             }
 
             if (GameState.IsInCombat)
             {
-                Battlefield.Refresh(GameState);
+                Battlefield.Refresh(GameState, Player.IsAttacking);
             }
 
             RefreshHand();
@@ -479,21 +492,36 @@ namespace ACardGame.UI
 
             if (GameState.CanBuyCard(card))
             {
-                GameState.BuyCard(true, card);
+                BuyCard(card);
             }
         }
 
-        private bool CardTargetsOnPlay(Card card)
+        protected virtual void PlayCard(Card card)
+        {
+            GameState.PlayCard(card);
+        }
+
+        protected virtual void PlayActionQueued()
+        {
+            GameState.PlayActionQueued();
+        }
+
+        protected virtual void BuyCard(Card card)
+        {
+            GameState.BuyCard(card);
+        }
+
+        protected bool CardTargetsOnPlay(Card card)
         {
             return card.TargetsOnPlay || (card is CreatureCard && GameState.IsInCombat && !GameState.ActivePlayer.IsAttacking);
         }
 
-        private void ShowDiscardViewer(bool isActivePlayer)
+        private void ShowDiscardViewer(bool isMyDiscardPile)
         {
-            CardStackViewer.Show(isActivePlayer ? GameState.ActivePlayer.DiscardPile : GameState.Enemy.DiscardPile);
+            CardStackViewer.Show(isMyDiscardPile ? Player.DiscardPile : Enemy.DiscardPile);
         }
 
-        private void ToggleShopVisible()
+        protected void ToggleShopVisible()
         {
             ShopEnabled = !ShopEnabled;
 
@@ -538,16 +566,36 @@ namespace ACardGame.UI
             LogViewer.Show(GameState.PublicLog);
         }
 
-        private void UpgradeShop()
+        protected virtual void UpgradeShop()
         {
-            if (GameState.ActivePlayer.ShopLevel == 7)
+            if (Player.ShopLevel == 7)
             {
                 return;
             }
 
             GameState.UpgradeShop();
 
-            UpgradeShopButton.Text = $"Upgrade shop ({GameState.ActivePlayer.ShopLevel + 3})";
+            UpgradeShopButton.Text = $"Upgrade shop ({Player.ShopLevel + 3})";
+        }
+
+        protected virtual void Worship()
+        {
+            GameState.Worship();
+        }
+
+        protected virtual void BuyGold()
+        {
+            GameState.BuyGold();
+        }
+
+        protected virtual void BuySilver()
+        {
+            GameState.BuySilver();
+        }
+
+        protected virtual void ActionRefreshShop()
+        {
+            GameState.ActionRefreshShop();
         }
 
         public override void LeftClick(Point position)
@@ -565,7 +613,7 @@ namespace ACardGame.UI
             var child = FilterChildren(e => e.AbsoluteLocation.Contains(position) && e.IsVisible)
                 .FirstOrDefault();
 
-            if (child != CardStackViewer || (!GameState.RequireAccept && !GameState.ActivePlayer.CanFreeTrade))
+            if (child != CardStackViewer || (!GameState.RequireAccept && !Player.CanFreeTrade))
             {
                 CardStackViewer.IsVisible = false;
             }
@@ -574,15 +622,15 @@ namespace ACardGame.UI
 
             if (Battlefield.IsVisible)
             {
-                Battlefield.Refresh(GameState);
+                Battlefield.Refresh(GameState, Player.IsAttacking);
             }
 
             RefreshHand();
         }
 
-        private void RefreshHand()
+        protected void RefreshHand()
         {
-            var cardsInHand = GameState.ActivePlayer.Hand;
+            var cardsInHand = Player.Hand;
             ActivePlayerHand.SetCards(cardsInHand, this);
         }
 
@@ -591,11 +639,8 @@ namespace ACardGame.UI
             HoveredCardViewer.SetCard(card);
         }
 
-        private void ResolveAccepted()
+        private bool ValidTargets(Card card, List<Card> targets)
         {
-            var card = GameState.TargetingCard;
-            var targets = GameState.TargetedCards;
-
             if (ShopCostPicker.IsVisible)
             {
                 GameState.ShopCostPicked = ShopCostPicker.CostPicked;
@@ -610,7 +655,17 @@ namespace ACardGame.UI
                         Severity = MessageSeverity.Error
                     });
 
-                    return;
+                    return false;
+                }
+                else if (OptionPicker.OptionsPicked.Count < card.MinTargets)
+                {
+                    SetMessageToPlayer(new MessageToPlayerParams
+                    {
+                        Message = $"Select at least {card.MinTargets} option(s)",
+                        Severity = MessageSeverity.Error
+                    });
+
+                    return false;
                 }
 
                 GameState.OptionsPicked = OptionPicker.OptionsPicked;
@@ -625,7 +680,7 @@ namespace ACardGame.UI
                         Severity = MessageSeverity.Error
                     });
 
-                    return;
+                    return false;
                 }
 
                 if (targets.Any())
@@ -639,7 +694,7 @@ namespace ACardGame.UI
                         });
 
                         targets.ForEach(e => e.IsTargeted = false);
-                        return;
+                        return false;
                     }
 
                     foreach (var target in targets)
@@ -659,7 +714,7 @@ namespace ACardGame.UI
                                 Message = "Some targets were invalid. They were deselected",
                                 Severity = MessageSeverity.Error
                             });
-                            return;
+                            return false;
                         }
                     }
                 }
@@ -671,8 +726,21 @@ namespace ACardGame.UI
                         Severity = MessageSeverity.Error
                     });
 
-                    return;
+                    return false;
                 }
+            }
+
+            return true;
+        }
+
+        protected virtual void ResolveAccepted(bool skipValidityChecks = false)
+        {
+            var card = GameState.TargetingCard;
+            var targets = GameState.TargetedCards;
+
+            if (!skipValidityChecks && !ValidTargets(card, targets))
+            {
+                return;
             }
 
             GameState.RequireAccept = false;
@@ -700,7 +768,7 @@ namespace ACardGame.UI
 
             if (GameState.IsInCombat)
             {
-                Battlefield.Refresh(GameState);
+                Battlefield.Refresh(GameState, Player.IsAttacking);
             }
 
             if (!GameState.ResolvingAfterPlay || (GameState.ResolvingAfterPlay && doneResolvingAfterplay))
@@ -715,11 +783,7 @@ namespace ACardGame.UI
 
             if (CardTargetsOnPlay(card) && !GameState.ResolvingAfterPlay)
             {
-                GameState.PlayCard(new PlayCardParams
-                {
-                    Card = card,
-                    IsActivePlayer = true
-                });
+                GameState.PlayCard(card);
             }
             else if (GameState.ResolvingAfterPlay && doneResolvingAfterplay)
             {
@@ -730,7 +794,7 @@ namespace ACardGame.UI
             }
         }
 
-        private void SetMessageToPlayer(MessageToPlayerParams param)
+        protected void SetMessageToPlayer(MessageToPlayerParams param)
         {
             MessageToPlayer.Text = param.Message;
             
@@ -744,27 +808,27 @@ namespace ACardGame.UI
             MessageToPlayer.IsVisible = true;
         }
 
-        public void ShowSupportsInPlay(bool isActivePlayer)
+        public void ShowSupportsInPlay(bool isMySupports)
         {
-            CardStackViewer.Show(GameState.GetPlayerSupports(isActivePlayer).Cast<Card>().ToList());
+            CardStackViewer.Show(GameState.GetPlayerSupports(isMySupports).Cast<Card>().ToList());
         }
 
         public override void Update()
         {
-            if (GameState.ActivePlayer.Deck.Any())
+            if (Player.Deck.Any())
             {
                 ActivePlayerDeck.IsVisible = true;
-                ActivePlayerDeck.Text = GameState.ActivePlayer.Deck.Count.ToString();
+                ActivePlayerDeck.Text = Player.Deck.Count.ToString();
             }
             else
             {
                 ActivePlayerDeck.IsVisible = false;
             }
 
-            if (GameState.ActivePlayer.Leader != null)
+            if (Player.Leader != null)
             {
                 ActivePlayerLeader.IsVisible = true;
-                ActivePlayerLeader.SetCard(GameState.ActivePlayer.Leader);
+                ActivePlayerLeader.SetCard(Player.Leader);
             }
             else
             {
@@ -772,10 +836,10 @@ namespace ACardGame.UI
                 ActivePlayerLeader.Clear();
             }
 
-            if (GameState.ActivePlayer.DiscardPile.Any())
+            if (Player.DiscardPile.Any())
             {
                 ActivePlayerDiscardPile.IsVisible = true;
-                ActivePlayerDiscardPile.SetCard(GameState.ActivePlayer.DiscardPile.Last());
+                ActivePlayerDiscardPile.SetCard(Player.DiscardPile.Last());
             }
             else
             {
@@ -784,30 +848,30 @@ namespace ACardGame.UI
             }
 
 
-            if (GameState.Enemy.Hand.Any())
+            if (Enemy.Hand.Any())
             {
                 EnemyHand.IsVisible = true;
-                EnemyHand.Text = GameState.Enemy.Hand.Count.ToString();
+                EnemyHand.Text = Enemy.Hand.Count.ToString();
             }
             else
             {
-                EnemyDeck.IsVisible = false;
+                EnemyHand.IsVisible = false;
             }
 
-            if (GameState.Enemy.Deck.Any())
+            if (Enemy.Deck.Any())
             {
                 EnemyDeck.IsVisible = true;
-                EnemyDeck.Text = GameState.Enemy.Deck.Count.ToString();
+                EnemyDeck.Text = Enemy.Deck.Count.ToString();
             }
             else
             {
                 EnemyDeck.IsVisible = false;
             }
 
-            if (GameState.Enemy.Leader != null)
+            if (Enemy.Leader != null)
             {
                 EnemyLeader.IsVisible = true;
-                EnemyLeader.SetCard(GameState.Enemy.Leader);
+                EnemyLeader.SetCard(Enemy.Leader);
             }
             else
             {
@@ -815,10 +879,10 @@ namespace ACardGame.UI
                 EnemyLeader.Clear();
             }
 
-            if (GameState.Enemy.DiscardPile.Any())
+            if (Enemy.DiscardPile.Any())
             {
                 EnemyDiscardPile.IsVisible = true;
-                EnemyDiscardPile.SetCard(GameState.Enemy.DiscardPile.Last());
+                EnemyDiscardPile.SetCard(Enemy.DiscardPile.Last());
             }
             else
             {
@@ -828,43 +892,38 @@ namespace ACardGame.UI
 
             if (ActivePlayerShop.IsVisible)
             {
-                ActivePlayerShop.SetCards(GameState.ActivePlayer.Shop);
+                ActivePlayerShop.SetCards(Player.Shop);
             }
 
             if (EnemyShop.IsVisible)
             {
-                EnemyShop.SetCards(GameState.Enemy.Shop);
+                EnemyShop.SetCards(Enemy.Shop);
             }
 
-            if (GameState.ActivePlayer.MoneyToSpend > 0)
+            if (Player.MoneyToSpend > 0)
             {
                 MoneyToSpend.IsVisible = true;
-                MoneyToSpend.Text = GameState.ActivePlayer.MoneyToSpend.ToString();
+                MoneyToSpend.Text = Player.MoneyToSpend.ToString();
             }
             else
             {
                 MoneyToSpend.IsVisible = false;
             }
 
-            if (GameState.RequireAccept)
-            {
-                EndTurnButton.IsVisible = false;
-                AcceptButton.IsVisible = true;
-            }
+            Life.Text = Player.Life.ToString();
+            EnemyLife.Text = Enemy.Life.ToString();
 
-            Life.Text = GameState.ActivePlayer.Life.ToString();
-            EnemyLife.Text = GameState.Enemy.Life.ToString();
+            BuySilverButton.IsVisible = Player.MoneyToSpend >= 3;
+            UpgradeShopButton.IsVisible = Player.MoneyToSpend >= Player.ShopLevel + 3;
+            BuyGoldButton.IsVisible = Player.MoneyToSpend >= 6;
+            WorshipButton.IsVisible = Player.MoneyToSpend >= 6 && Player.Leader?.Name == "Eva";
+            RefreshShopButton.IsVisible = true;
 
-            BuySilverButton.IsVisible = GameState.ActivePlayer.MoneyToSpend >= 3;
-            UpgradeShopButton.IsVisible = GameState.ActivePlayer.MoneyToSpend >= GameState.ActivePlayer.ShopLevel + 3;
-            BuyGoldButton.IsVisible = GameState.ActivePlayer.MoneyToSpend >= 6;
-            WorshipButton.IsVisible = GameState.ActivePlayer.MoneyToSpend >= 6 && GameState.ActivePlayer.Leader?.Name == "Eva";
-
-            if (GameState.ActivePlayer.FreeShopRefreshes > 0)
+            if (Player.FreeShopRefreshes > 0)
             {
                 RefreshShopButton.Text = "Refresh shop";
             }
-            else if (GameState.ActivePlayer.MoneyToSpend >= 1)
+            else if (Player.MoneyToSpend >= 1)
             {
                 RefreshShopButton.Text = "Refresh shop (1)";
             }
@@ -875,21 +934,34 @@ namespace ACardGame.UI
 
             if (ShopEnabled)
             {
-                ShopRefreshCostButtons.ForEach(e => e.IsVisible = int.Parse(e.Text) <= GameState.ActivePlayer.ShopLevel);
+                ShopRefreshCostButtons.ForEach(e => e.IsVisible = int.Parse(e.Text) <= Player.ShopLevel);
                 ShopRefreshCostButtons.ForEach(e => e.IsSelected = false);
-                ShopRefreshCostButtons.Single(e => e.Text == GameState.ActivePlayer.ShopRefreshCost.ToString()).IsSelected = true;
+                ShopRefreshCostButtons.Single(e => e.Text == Player.ShopRefreshCost.ToString()).IsSelected = true;
             }
             else
             {
                 ShopRefreshCostButtons.ForEach(e => e.IsVisible = false);
             }
 
-            UpdateCardSelector();
+            if (GameState.RequireAccept)
+            {
+                EndTurnButton.IsVisible = false;
+                AcceptButton.IsVisible = true;
+            }
+            else
+            {
+                EndTurnButton.IsVisible = true;
+                AcceptButton.IsVisible = false;
+            }
 
             if (GameState.RevealOpponentHand && !CardStackViewer.IsVisible)
             {
-                CardStackViewer.Show(GameState.Enemy.Hand);
+                CardStackViewer.Show(Enemy.Hand);
             }
+
+            ShowCardsPlayedThisTurnButton.IsVisible = Player.CardsPlayedThisTurn.Any();
+
+            UpdateCardSelector();
 
             if (Battlefield.IsVisible && !GameState.IsInCombat)
             {
@@ -917,6 +989,8 @@ namespace ACardGame.UI
             if (GameState.RemoveOptionsPickerFlag)
             {
                 OptionPicker.IsVisible = false;
+                OptionPicker.Clear();
+                GameState.OptionsPickerOptions = null;
                 GameState.RemoveOptionsPickerFlag = false;
             }
             else if (GameState.OptionsPickerOptions != null)
@@ -925,15 +999,13 @@ namespace ACardGame.UI
                 GameState.OptionsPickerOptions = null;
             }
 
-            ShowCardsPlayedThisTurnButton.IsVisible = GameState.ActivePlayer.CardsPlayedThisTurn.Any();
-
-            if (GameState.ActionQueued != null && !GameState.RequireAccept)
+            if (GameState.ActionQueued != null && !GameState.RequireAccept && IsMyTurn)
             {
-                GameState.PlayActionQueued();
+                PlayActionQueued();
                 RefreshHand();
             }
 
-            if (GameState.PlayerIsFreeTradeBuying())
+            if (GameState.PlayerIsFreeTradeBuying(Player))
             {
                 var boughtCard = GameState.TryBuyCardFromDiscardPile();
                 var cards = new List<Card>(CardStackViewer.Cards);

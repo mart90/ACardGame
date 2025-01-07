@@ -13,7 +13,7 @@ namespace ACardGame.UI
             Texture = assetManager.LoadTexture("UI/lane_background");
         }
 
-        public void Refresh(CreatureCard attackingCreature, bool activePlayerIsAttacking)
+        public void Refresh(CreatureCard attackingCreature, bool playerIsAttacking)
         {
             var blockers = attackingCreature.BlockedBy;
             var supports = attackingCreature.AttachedEquipments;
@@ -28,7 +28,7 @@ namespace ACardGame.UI
             if (supports.Any())
             {
                 GoDown();
-                int startY = activePlayerIsAttacking ? 67 - supportSpacing * supports.Count : 0;
+                int startY = playerIsAttacking ? 67 - supportSpacing * supports.Count : 0;
                 SetCursor(attackerX, startY);
 
                 for (int i = 0; i < supports.Count; i++)
@@ -47,7 +47,7 @@ namespace ACardGame.UI
             }
 
             GoRight();
-            SetCursor(attackerX, activePlayerIsAttacking ? 67 : supportSpacing * supports.Count);
+            SetCursor(attackerX, playerIsAttacking ? 67 : supportSpacing * supports.Count);
             var attackerContainer = new CardContainer(AssetManager, relativeCardSizeX, true, null);
             attackerContainer.OnLeftClickAction = delegate 
             { 
@@ -61,7 +61,7 @@ namespace ACardGame.UI
             {
                 for (int i = 0; i < blockers.Count; i++)
                 {
-                    SetCursor(1 + relativeCardSizeX * i, activePlayerIsAttacking ? 0 : 67);
+                    SetCursor(1 + relativeCardSizeX * i, playerIsAttacking ? 0 : 67);
 
                     var blocker = blockers[i];
                     var blockerSupports = blocker.AttachedEquipments;
@@ -70,7 +70,7 @@ namespace ACardGame.UI
                     {
                         GoDown();
 
-                        int startY = activePlayerIsAttacking ? 0 : 67 - supportSpacing * blockerSupports.Count;
+                        int startY = playerIsAttacking ? 0 : 67 - supportSpacing * blockerSupports.Count;
                         SetCursorY(startY);
 
                         for (int si = 0; si < blockerSupports.Count; si++)

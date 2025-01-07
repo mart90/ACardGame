@@ -19,6 +19,11 @@ namespace ACardGame.UI
             DrawLayer = 5;
         }
 
+        public void Clear()
+        {
+            ClearChildren();
+        }
+
         public void Show(List<string> options)
         {
             ClearChildren();

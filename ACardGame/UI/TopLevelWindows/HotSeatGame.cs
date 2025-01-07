@@ -1,12 +1,29 @@
 ﻿using ACardGameLibrary;
-using Microsoft.Xna.Framework;
 
 namespace ACardGame.UI
 {
     public class HotSeatGame : GameWindow
     {
-        public HotSeatGame(Rectangle absoluteLocation, AssetManager assetManager, GameStateManager gameStateManager) : base(absoluteLocation, assetManager, gameStateManager)
+        public override Player Player => GameState.ActivePlayer;
+        public override Player Enemy => GameState.Enemy;
+        public override bool IsMyTurn => true;
+
+        public HotSeatGame(AssetManager assetManager, GameStateManager gameStateManager) : base(assetManager, gameStateManager)
         {
+            Texture = assetManager.LoadTexture("UI/wallpaper");
+            CorrespondingUiState = UiState.HotSeatGame;
+
+            PrepareShop();
+            BuildUI();
+            Update();
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            PlayerName.Text = Player.Name;
+            EnemyName.Text = Enemy.Name;
         }
     }
 }

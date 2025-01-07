@@ -4,11 +4,17 @@ namespace ACardGameLibrary
 {
     public static class CardLibrary
     {
+        private static int _nextCardId = 1;
+
         public static Card GetCard(string cardName)
         {
             var card = Cards.Single(e => e.Name == cardName);
             var newCard = card.Clone();
             newCard.AddEffects(card.Effects);
+
+            newCard.Id = _nextCardId;
+            _nextCardId++;
+            
             return newCard;
         }
 
@@ -173,7 +179,7 @@ namespace ACardGameLibrary
             new Card
             {
                 Name = "Marcus Aurelius",
-                Text = "You get an extra free shop refresh each turn.",
+                Text = "You get an extra free shop refresh at the start of each turn.",
                 IsInShopPool = true,
                 Cost = 2,
                 AmountInShopPool = 1,
@@ -271,6 +277,12 @@ namespace ACardGameLibrary
                                 Effect = (game, owner) =>
                                 {
                                     game.SetTargetingCard(owner.Leader);
+
+                                    game.MessageToPlayer = new MessageToPlayerParams
+                                    {
+                                        Message = "You may target a creature",
+                                        Severity = MessageSeverity.Information
+                                    };
 
                                     if (!owner.IsActive)
                                     {
@@ -713,6 +725,8 @@ namespace ACardGameLibrary
                                             {
                                                 game.SetTargetingCard(owner.Leader);
 
+                                                game.RemoveOptionsPickerFlag = false;
+
                                                 game.OptionsPickerOptions = new List<string>
                                                 {
                                                     "Yes",
@@ -752,7 +766,7 @@ namespace ACardGameLibrary
                             }
                             else
                             {
-                                game.AddPublicLog($"{owner.Name} used A. Einstein to resolve {game.ActionQueued.Name} twice");
+                                game.AddPublicLog($"{owner.Name} used Albert Einstein to resolve {game.ActionQueued.Name} twice");
                             }
 
                             game.RemoveOptionsPickerFlag = true;
@@ -2716,6 +2730,8 @@ namespace ACardGameLibrary
 
                             game.CardBeingPlayedIsTargeting();
 
+                            game.AddPublicLog($"{owner.Name} looked at the top 5 cards of the {cost}-cost shop pile");
+
                             game.MessageToPlayer = new MessageToPlayerParams
                             {
                                 Message = "Select cards to put on the bottom",
@@ -2736,6 +2752,8 @@ namespace ACardGameLibrary
                                 game.ShopPool.Remove(card);
                                 game.ShopPool.Add(card);
                             }
+
+                            game.AddPublicLog($"{owner.Name} put {game.TargetedCards.Count} cards on the bottom");
 
                             game.RefreshShop(owner);
                         }
@@ -2825,6 +2843,7 @@ namespace ACardGameLibrary
                 IsInShopPool = true,
                 Cost = 4,
                 AmountInShopPool = 2,
+                MinTargets = 1,
                 Types = new List<CardType>
                 {
                     CardType.Action

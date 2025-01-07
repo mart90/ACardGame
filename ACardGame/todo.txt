@@ -1,0 +1,11 @@
+End game
+Return to menu
+Elo ratings
+Join nearest open challenge
+How many cards in shop pile?
+Restore game
+Background
+Sound effects
+Server logging
+Making sure opponent still here
+Reconnecting

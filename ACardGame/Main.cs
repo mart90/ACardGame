@@ -24,13 +24,18 @@ namespace ACardGame
 
         private IHoverable _hoveredElement;
 
-        //private readonly NetManager _client;
+        private ServerConnection _serverConnection;
+
+        public static int ScreenWidth;
+        public static int ScreenHeight;
+        public const string GameVersion = "0.1";
 
         public Main()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
+            _serverConnection = new ServerConnection();
 
             TargetElapsedTime = new TimeSpan(100000);
             _assetManager = new AssetManager(Content);
@@ -38,37 +43,29 @@ namespace ACardGame
 
         protected override void Initialize()
         {
-            _graphics.IsFullScreen = true;
+            ScreenWidth = 1920;//GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width;
+            ScreenHeight = 1080;//GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height;
+
+            _graphics.IsFullScreen = false;
+            _graphics.PreferredBackBufferWidth = ScreenWidth;
+            _graphics.PreferredBackBufferHeight = ScreenHeight;
             _graphics.HardwareModeSwitch = false;
             _graphics.ApplyChanges();
 
-            //EventBasedNetListener listener = new EventBasedNetListener();
-            //_client = new(listener);
-
-            //_client.Start();
-            //_client.Connect("localhost", 9050, "SomeConnectionKey");
-            //listener.NetworkReceiveEvent += (fromPeer, dataReader, deliveryMethod, channel) =>
-            //{
-            //    var str = dataReader.GetString(100);
-            //    dataReader.Recycle();
-            //};
+            Window.TextInput += HandleTextInput;
 
             base.Initialize();
         }
 
         protected override void LoadContent()
         {
-            int screenWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width;
-            int screenHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height;
-
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-            GameStateManager gameStateManager = new();
 
             _topLevelWindows = new List<TopLevelUiWindow>
             {
-                new MainMenu(new Rectangle(0, 0, screenWidth, screenHeight), _assetManager),
-                new HotSeatGame(new Rectangle(0, 0, screenWidth, screenHeight), _assetManager, gameStateManager),
+                new MainMenu(_assetManager),
+                new LoginScreen(_assetManager, _serverConnection),
+                new MultiplayerHome(_assetManager, _serverConnection),
             };
 
             _activeWindow = _topLevelWindows.Single(e => e is MainMenu);
@@ -83,14 +80,23 @@ namespace ACardGame
 
             if (_activeWindow.NewUiState != null)
             {
+                if (_activeWindow.NewUiState == UiState.HotSeatGame)
+                {
+                    _topLevelWindows.RemoveAll(e => e is HotSeatGame); 
+                    _topLevelWindows.Add(new HotSeatGame(_assetManager, new GameStateManager()));
+                }
+                else if (_activeWindow.NewUiState == UiState.MultiplayerGame)
+                {
+                    _topLevelWindows.RemoveAll(e => e is MultiplayerGame);
+                    _topLevelWindows.Add(((MultiplayerHome)_activeWindow).CreatedGame);
+                }
+
                 var newWindow = _topLevelWindows.Single(e => e.CorrespondingUiState == _activeWindow.NewUiState);
                 _activeWindow.NewUiState = null;
                 _activeWindow = newWindow;
             }
 
             HandleMouseState();
-
-            //_client.PollEvents();
 
             _activeWindow.Update();
 
@@ -147,6 +153,11 @@ namespace ACardGame
                     _hoveredElement.IsHovered = true;
                 }
             }
+        }
+
+        private void HandleTextInput(object sender, TextInputEventArgs args)
+        {
+            _activeWindow.ReceiveKeyboardInput(args);
         }
 
         protected override void Draw(GameTime gameTime)
