@@ -32,7 +32,8 @@ namespace ACardGame.UI
             AddChild(new TextArea(AssetManager, "buttonFont", 5, true, 5)
             {
                 Text = "Username:",
-                TextOffset = new Vector2(2, 40)
+                TextOffset = new Vector2(2, 40),
+                ForceOneLine = true
             });
             AddSpacing(1);
 
@@ -43,7 +44,8 @@ namespace ACardGame.UI
             AddChild(new TextArea(AssetManager, "buttonFont", 5, true, 5)
             {
                 Text = "Password:",
-                TextOffset = new Vector2(2, 40)
+                TextOffset = new Vector2(2, 40),
+                ForceOneLine = true
             });
             AddSpacing(1);
 

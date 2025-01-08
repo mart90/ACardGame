@@ -10,6 +10,7 @@
         JoinFromClipboard,
 
         MakeMove,
+        SetResult
     }
 
     public enum ServerMessageType
@@ -38,6 +39,7 @@
         Passing,
         EndingTurn,
         EventUsedInput,
-        PlayingActionQueued
+        PlayingActionQueued,
+        FreeTradeBuying
     }
 }

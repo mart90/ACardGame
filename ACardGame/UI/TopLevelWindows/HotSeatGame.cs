@@ -16,6 +16,8 @@ namespace ACardGame.UI
             PrepareShop();
             BuildUI();
             Update();
+
+            BackToMenuButton.IsVisible = true;
         }
 
         public override void Update()

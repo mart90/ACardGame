@@ -2,7 +2,6 @@
 using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Forms;
 
 namespace ACardGame.UI
 {
@@ -31,6 +30,7 @@ namespace ACardGame.UI
         public Button EndTurnButton { get; set; }
         public Button ToggleShopButton { get; set; }
         public Button ViewLogButton { get; set; }
+        public Button BackToMenuButton { get; set; }
 
         public UiElement Life { get; set; }
         public UiElement EnemyLife { get; set; }
@@ -44,6 +44,9 @@ namespace ACardGame.UI
         public Button BuySilverButton { get; set; }
         public Button BuyGoldButton { get; set; }
         public Button ShowCardsPlayedThisTurnButton { get; set; }
+
+        public TextArea ShopPilesText { get; set; }
+        public List<FaceDownCardStack> ShopPiles { get; set; }
 
         public TextArea ViewShopDiscardText { get; set; }
         public List<Button> ViewShopDiscardButtons { get; set; }
@@ -69,6 +72,8 @@ namespace ACardGame.UI
         public abstract Player Player { get; }
         public abstract Player Enemy { get; }
         public abstract bool IsMyTurn { get; }
+
+        public bool Frozen { get; set; }
         
         public GameWindow(AssetManager assetManager, GameStateManager gameStateManager)
             : base(assetManager)
@@ -76,6 +81,7 @@ namespace ACardGame.UI
             GameState = gameStateManager;
             ShopEnabled = true;
 
+            ShopPiles = new List<FaceDownCardStack>();
             ViewShopDiscardButtons = new List<Button>();
             ShopRefreshCostButtons = new List<Button>();
         }
@@ -139,7 +145,7 @@ namespace ACardGame.UI
             AddChild(ActivePlayerDiscardPile);
 
             // Shop
-            SetCursor(1.5, 40);
+            SetCursor(1.5, 33);
             ActivePlayerShop = new Shop(AssetManager, 22, true);
             for (int i = 0; i < 3; i++)
             {
@@ -237,7 +243,16 @@ namespace ACardGame.UI
 
             // Button stack
             GoDown();
-            SetCursor(89, 30);
+            SetCursor(89, 25);
+            BackToMenuButton = new Button(AssetManager, ButtonType.Long, 10, true, "Back to menu", delegate
+            {
+                NewUiState = UiState.MainMenu;
+            })
+            {
+                IsVisible = false
+            };
+            AddChild(BackToMenuButton);
+            AddSpacing(1);
             WorshipButton = new Button(AssetManager, ButtonType.Long, 10, true, "Worship", delegate
             {
                 Worship();
@@ -323,6 +338,27 @@ namespace ACardGame.UI
                 TextColor = Color.White
             };
             AddChild(LogViewer);
+
+            // Shop piles
+            SetCursor(1.5, 57);
+            ShopPilesText = new TextArea(AssetManager, "buttonFont", 9, true, 5)
+            {
+                Text = "Shop piles",
+                ForceOneLine = true
+            };
+            AddChild(ShopPilesText);
+
+            for (int i = 2; i <= 7; i++)
+            {
+                var shopPile = new FaceDownCardStack(AssetManager, 2.5, true)
+                {
+                    TextFont = AssetManager.LoadFont("buttonFont"),
+                    TextIsCentered = true
+                };
+                ShopPiles.Add(shopPile);
+                AddChild(shopPile);
+                AddSpacing(.2);
+            }
 
             // View shop discard buttons
             SetCursor(1.5, 65);
@@ -511,6 +547,18 @@ namespace ACardGame.UI
             GameState.BuyCard(card);
         }
 
+        protected virtual void TryFreeTradeBuy()
+        {
+            var boughtCard = GameState.TryBuyCardFromDiscardPile();
+
+            if (boughtCard != null)
+            {
+                var cards = new List<Card>(CardStackViewer.Cards);
+                cards.Remove(boughtCard);
+                CardStackViewer.Show(cards);
+            }
+        }
+
         protected bool CardTargetsOnPlay(Card card)
         {
             return card.TargetsOnPlay || (card is CreatureCard && GameState.IsInCombat && !GameState.ActivePlayer.IsAttacking);
@@ -531,6 +579,8 @@ namespace ACardGame.UI
             ViewShopDiscardText.IsVisible = !ViewShopDiscardText.IsVisible;
             ViewShopDiscardButtons.ForEach(e => e.IsVisible = !e.IsVisible);
             ShopRefreshCostText.IsVisible = !ShopRefreshCostText.IsVisible;
+            ShopPilesText.IsVisible = !ShopPilesText.IsVisible;
+            ShopPiles.ForEach(e => e.IsVisible = !e.IsVisible);
         }
 
         private void ViewShopDiscard(int shopLevel)
@@ -612,6 +662,11 @@ namespace ACardGame.UI
 
             var child = FilterChildren(e => e.AbsoluteLocation.Contains(position) && e.IsVisible)
                 .FirstOrDefault();
+
+            if (Frozen && child != BackToMenuButton)
+            {
+                return;
+            }
 
             if (child != CardStackViewer || (!GameState.RequireAccept && !Player.CanFreeTrade))
             {
@@ -910,6 +965,11 @@ namespace ACardGame.UI
                 MoneyToSpend.IsVisible = false;
             }
 
+            for (int i = 2; i <= 7; i++)
+            {
+                ShopPiles[i - 2].Text = GameState.ShopPool.Count(e => e.Cost == i).ToString();
+            }
+
             Life.Text = Player.Life.ToString();
             EnemyLife.Text = Enemy.Life.ToString();
 
@@ -1007,10 +1067,18 @@ namespace ACardGame.UI
 
             if (GameState.PlayerIsFreeTradeBuying(Player))
             {
-                var boughtCard = GameState.TryBuyCardFromDiscardPile();
-                var cards = new List<Card>(CardStackViewer.Cards);
-                cards.Remove(boughtCard);
-                CardStackViewer.Show(cards);
+                TryFreeTradeBuy();
+            }
+
+            if (GameState.Winner != null)
+            {
+                BackToMenuButton.IsVisible = true;
+                SetMessageToPlayer(new MessageToPlayerParams
+                {
+                    Message = $"{GameState.Winner.Name} won",
+                    Severity = MessageSeverity.Warning
+                });
+                Frozen = true;
             }
         }
 

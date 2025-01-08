@@ -23,8 +23,9 @@ namespace ACardGame
             _client = new(listener);
 
             _client.Start();
-            _client.Connect("localhost", 41124, "iYMVZT6XYMKNvu5nj7DEHOztsqBdX9kX");
-            
+            _client.Connect("85.146.96.60", 41124, "iYMVZT6XYMKNvu5nj7DEHOztsqBdX9kX");
+            //_client.Connect("localhost", 41124, "iYMVZT6XYMKNvu5nj7DEHOztsqBdX9kX");
+
             listener.NetworkReceiveEvent += (fromPeer, dataReader, channel, deliveryMethod) =>
             {
                 var str = dataReader.GetString();
@@ -105,9 +106,19 @@ namespace ACardGame
             return SendMessageAwaitResponse(ServerEndpoint.JoinFromClipboard, challengeId);
         }
 
+        public ServerResponse JoinNearestOpen()
+        {
+            return SendMessageAwaitResponse(ServerEndpoint.JoinNearestOpen, null);
+        }
+
         public ServerResponse SendMakeMove(GameMove message)
         {
             return SendMessageAwaitResponse(ServerEndpoint.MakeMove, message);
+        }
+
+        public ServerResponse SendResult()
+        {
+            return SendMessageAwaitResponse(ServerEndpoint.SetResult, null);
         }
 
         private ServerResponse SendMessageAwaitResponse(ServerEndpoint endpoint, object obj)

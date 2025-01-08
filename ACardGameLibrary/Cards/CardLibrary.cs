@@ -909,7 +909,7 @@ namespace ACardGameLibrary
 
                                     if (sauron != null && sauron.AttachedEquipments.Any(e => e.Name == "Ring of power"))
                                     {
-                                        // TODO end the game
+                                        game.Winner = owner;
                                     }
 
                                     game.RemoveListener("Sauron", owner);

@@ -12,7 +12,11 @@ namespace ACardGameServer
 
         public MoveType Type { get; set; }
 
+        public int TurnNumber { get; set; }
+
         public int? CardId { get; set; }
+
+        public string CardName { get; set; }
 
         public List<GameMoveAcceptParams> AcceptParams { get; set; }
 

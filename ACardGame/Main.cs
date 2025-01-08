@@ -43,10 +43,14 @@ namespace ACardGame
 
         protected override void Initialize()
         {
-            ScreenWidth = 1920;//GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width;
-            ScreenHeight = 1080;//GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height;
+            ScreenWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width;
+            ScreenHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height;
+            _graphics.IsFullScreen = true;
 
-            _graphics.IsFullScreen = false;
+            //ScreenWidth = 1920;
+            //ScreenHeight = 1080;
+            //_graphics.IsFullScreen = false;
+
             _graphics.PreferredBackBufferWidth = ScreenWidth;
             _graphics.PreferredBackBufferHeight = ScreenHeight;
             _graphics.HardwareModeSwitch = false;
@@ -63,7 +67,7 @@ namespace ACardGame
 
             _topLevelWindows = new List<TopLevelUiWindow>
             {
-                new MainMenu(_assetManager),
+                new MainMenu(_assetManager, _serverConnection),
                 new LoginScreen(_assetManager, _serverConnection),
                 new MultiplayerHome(_assetManager, _serverConnection),
             };

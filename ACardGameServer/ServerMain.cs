@@ -1,5 +1,6 @@
 ﻿using LiteNetLib;
 using LiteNetLib.Utils;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 
 namespace ACardGameServer
@@ -9,10 +10,18 @@ namespace ACardGameServer
         private readonly List<Client> _clients;
         private readonly DataContext _dataContext;
 
+        public static IConfiguration Config { get; set; }
+
         public ServerMain()
         {
             _clients = new List<Client>();
             _dataContext = new DataContext();
+
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("config.json", optional: false);
+
+            Config = builder.Build();
         }
 
         public void Start()
@@ -55,13 +64,11 @@ namespace ACardGameServer
                 dataReader.Recycle();
             };
 
-            while (!Console.KeyAvailable)
+            while (true)
             {
                 server.PollEvents();
                 Thread.Sleep(15);
             }
-
-            server.Stop();
         }
 
         public void Receive(Request message, NetPeer fromPeer)
@@ -92,8 +99,10 @@ namespace ACardGameServer
                 case ServerEndpoint.CreateChallenge: CreateChallenge(client); break;
                 case ServerEndpoint.CancelChallenge: CancelChallenge(client); break;
                 case ServerEndpoint.JoinFromClipboard: JoinChallengeById(client, message.DeserializeJson<string>()); break;
+                case ServerEndpoint.JoinNearestOpen: JoinNearestOpenChallenge(client); break;
 
                 case ServerEndpoint.MakeMove: MakeMove(client, message.DeserializeJson<GameMove>()); break;
+                case ServerEndpoint.SetResult: SetResult(client); break;
             }
         }
 
@@ -109,6 +118,34 @@ namespace ACardGameServer
             SendResponse(client, StatusCode.Ok);
         }
 
+        public void SetResult(Client client)
+        {
+            client.InGame.WinnerId = client.AuthenticatedUser.Id;
+
+            var opponent = GetOpponent(client);
+
+            double p1rating = client.AuthenticatedUser.Rating;
+            double p2rating = opponent.AuthenticatedUser.Rating;
+
+            UpdateEloRatings(ref p1rating, ref p2rating, client.AuthenticatedUser.KFactor, opponent.AuthenticatedUser.KFactor, 1);
+
+            client.AuthenticatedUser.Rating = p1rating;
+            opponent.AuthenticatedUser.Rating = p2rating;
+
+            if (client.AuthenticatedUser.KFactor > 30)
+            {
+                client.AuthenticatedUser.KFactor -= 5;
+            }
+            if (opponent.AuthenticatedUser.KFactor > 30)
+            {
+                opponent.AuthenticatedUser.KFactor -= 5;
+            }
+
+            _dataContext.SaveChanges();
+
+            SendResponse(client, StatusCode.Ok);
+        }
+
         public void JoinChallengeById(Client client, string challengeId)
         {
             var opponent = _clients.SingleOrDefault(e => e.ChallengeGuid == challengeId);
@@ -118,7 +155,38 @@ namespace ACardGameServer
                 SendResponse(client, StatusCode.Error, "Challenge not found");
                 return;
             }
+            else if (opponent == client)
+            {
+                SendResponse(client, StatusCode.Error, "Can't join own challenge");
+                return;
+            }
 
+            opponent.ChallengeGuid = null;
+
+            CreateGame(client, opponent);
+        }
+
+        public void JoinNearestOpenChallenge(Client client)
+        {
+            var openChallenges = _clients.Where(e => e.ChallengeGuid != null && e != client);
+
+            if (!openChallenges.Any())
+            {
+                SendResponse(client, StatusCode.Error, "No open challenges");
+                return;
+            }
+
+            client.ChallengeGuid = null;
+
+            var opponent = openChallenges
+                .OrderBy(e => Math.Abs(e.AuthenticatedUser.Rating - client.AuthenticatedUser.Rating))
+                .First();
+
+            CreateGame(client, opponent);
+        }
+
+        private void CreateGame(Client client, Client opponent)
+        {
             int seed = new Random().Next();
 
             var game = new Game
@@ -206,7 +274,7 @@ namespace ACardGameServer
 
         public void MakeMove(Client client, GameMove makeMoveMessage)
         {
-            var opponent = _clients.Where(e => e.InGame?.Id == makeMoveMessage.GameId && e != client).SingleOrDefault();
+            var opponent = GetOpponent(client);
 
             if (opponent == null)
             {
@@ -218,10 +286,19 @@ namespace ACardGameServer
 
             SendResponse(client, StatusCode.Ok);
 
-            makeMoveMessage.ToDatabaseFriendly();
-            makeMoveMessage.UserId = client.AuthenticatedUser.Id;
-            _dataContext.Add(makeMoveMessage);
-            _dataContext.SaveChanges();
+            if (makeMoveMessage.Type == MoveType.BuyingFromShop || makeMoveMessage.Type == MoveType.FreeTradeBuying)
+            {
+                var cardBuy = new CardBuy
+                {
+                    GameId = client.InGame.Id,
+                    UserId = client.AuthenticatedUser.Id,
+                    CardName = makeMoveMessage.CardName,
+                    TurnNumber = makeMoveMessage.TurnNumber
+                };
+
+                _dataContext.Add(cardBuy);
+                _dataContext.SaveChanges();
+            }
         }
 
         public static void SendResponse(Client client, StatusCode statusCode, object data = null)
@@ -250,6 +327,20 @@ namespace ACardGameServer
             writer.Put("m" + JsonConvert.SerializeObject(message));
 
             client.NetPeer.Send(writer, DeliveryMethod.ReliableOrdered);
+        }
+
+        private Client GetOpponent(Client client)
+        {
+            return _clients.Where(e => e.InGame?.Id == client.InGame.Id && e != client).SingleOrDefault();
+        }
+
+        public static void UpdateEloRatings(ref double player1Rating, ref double player2Rating, double player1KFactor, double player2KFactor, double result)
+        {
+            double expectedScorePlayer1 = 1.0 / (1.0 + Math.Pow(10, (player2Rating - player1Rating) / 400));
+            double expectedScorePlayer2 = 1.0 / (1.0 + Math.Pow(10, (player1Rating - player2Rating) / 400));
+
+            player1Rating += player1KFactor * (result - expectedScorePlayer1);
+            player2Rating += player2KFactor * ((1 - result) - expectedScorePlayer2);
         }
     }
 }

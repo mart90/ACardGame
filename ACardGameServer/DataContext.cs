@@ -11,7 +11,7 @@ namespace ACardGameServer
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseMySQL("server=192.168.1.202;database=a_card_game;user=acg_server;password=J8whvSvm3d");
+            optionsBuilder.UseMySQL(ServerMain.Config.GetSection("connectionString").Value.ToString());
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -23,6 +23,8 @@ namespace ACardGameServer
                 e.ToTable("user");
                 e.HasKey(e => e.Id);
                 e.Property(e => e.PasswordHash).HasColumnName("password_hash");
+                e.Property(e => e.Rating).HasColumnName("rating").ValueGeneratedOnAdd();
+                e.Property(e => e.KFactor).HasColumnName("kfactor").ValueGeneratedOnAdd();
             });
 
             modelBuilder.Entity<Game>(e =>
@@ -75,6 +77,16 @@ namespace ACardGameServer
                 e.HasOne(e => e.GameMove).WithMany(e => e.AcceptParams).HasForeignKey(e => e.GameMoveId);
             });
 
+            modelBuilder.Entity<CardBuy>(e =>
+            {
+                e.ToTable("card_buy");
+                e.HasKey(e => e.Id);
+                e.Property(e => e.GameId).HasColumnName("game_id");
+                e.Property(e => e.UserId).HasColumnName("user_id");
+                e.Property(e => e.CardName).HasColumnName("card_name");
+                e.Property(e => e.TurnNumber).HasColumnName("turn_number");
+            });
+
             modelBuilder.Entity<LatestVersion>(e =>
             {
                 e.ToTable("latest_version");
@@ -89,6 +101,8 @@ namespace ACardGameServer
         public int Id { get; set; }
         public string Name { get; set; }
         public string PasswordHash { get; set; }
+        public double Rating { get; set; }
+        public int KFactor { get; set; }
 
         public List<GamePlayer> GamesPlayed { get; set; }
         public List<Game> GamesWon { get; } = new();
@@ -115,6 +129,15 @@ namespace ACardGameServer
         public User Player { get; set; }
 
         public double RatingChange { get; set; }
+    }
+
+    public class CardBuy
+    {
+        public int Id { get; set; }
+        public int GameId { get; set; }
+        public int UserId { get; set; }
+        public string CardName { get; set; }
+        public int TurnNumber { get; set; }
     }
 
     public class LatestVersion

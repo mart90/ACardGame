@@ -33,7 +33,7 @@ namespace ACardGame.UI
         public void Build()
         {
             GoDown();
-            SetCursor(43, 40);
+            SetCursor(43, 30);
 
             AddChild(new Button(AssetManager, ButtonType.Long, 14, true, "Join open challenge", delegate
             {
@@ -57,13 +57,25 @@ namespace ACardGame.UI
 
             AddSpacing(2);
 
+            AddChild(new Button(AssetManager, ButtonType.Long, 14, true, "Back to menu", delegate
+            {
+                NewUiState = UiState.MainMenu;
+            }));
+
+            AddSpacing(2);
+
             Message = new TextArea(AssetManager, "buttonFont", 20, true, 10);
             AddChild(Message);
         }
 
         public void JoinNearestOpen()
         {
+            var response = _server.JoinNearestOpen();
 
+            if (response.StatusCode != StatusCode.Ok)
+            {
+                Message.Text = JsonConvert.DeserializeObject<string>(response.Data);
+            }
         }
 
         public void JoinFromClipboard()
@@ -73,7 +85,7 @@ namespace ACardGame.UI
 
             if (response.StatusCode != StatusCode.Ok)
             {
-                Message.Text = "Error joining game";
+                Message.Text = JsonConvert.DeserializeObject<string>(response.Data);
             }
         }
 

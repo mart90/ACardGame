@@ -27,6 +27,7 @@
 
         public Player ActivePlayer => Players.Single(e => e.IsActive);
         public Player Enemy => Players.Single(e => !e.IsActive);
+        public Player? Winner { get; set; }
 
         public Player Attacker => Players.Single(e => e.IsAttacking);
         public Player Defender => Players.Single(e => !e.IsAttacking);
@@ -126,7 +127,7 @@
 
         public bool CanBuyCard(Card card)
         {
-            if (ActivePlayer.MoneyToSpend < card.Cost)
+            if (ActivePlayer.MoneyToSpend < card.Cost || card.Cost > ActivePlayer.ShopLevel)
             {
                 return false;
             }
@@ -444,9 +445,9 @@
             TriggerEvent(GameEvent.DealingDamage);
             Enemy.Life -= DamageBeingDealt;
 
-            if (Enemy.Life < 0)
+            if (Enemy.Life <= 0)
             {
-                // TODO end the game
+                Winner = ActivePlayer;
             }
         }
 
@@ -910,7 +911,7 @@
 
             if (eva.Counters == 10)
             {
-                // TODO end the game
+                Winner = ActivePlayer;
             }
         }
 

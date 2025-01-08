@@ -11,6 +11,7 @@ namespace ACardGame.UI
     {
         public int Id { get; set; }
         public User AuthenticatedUser => _server.AuthenticatedUser;
+        private bool _resultReported;
 
         private readonly ServerConnection _server;
 
@@ -68,6 +69,15 @@ namespace ACardGame.UI
             {
                 PlayerName.Text = Player.Name + "*";
                 EnemyName.Text = Enemy.Name;
+            }
+
+            if (GameState.Winner != null && Player == GameState.Winner && !_resultReported)
+            {
+                var response = _server.SendResult();
+
+                // TODO error handling
+                
+                _resultReported = true;
             }
         }
 
@@ -128,6 +138,11 @@ namespace ACardGame.UI
             else if (move.Type == MoveType.EventUsedInput)
             {
                 ResolveAcceptParams(move);
+            }
+            else if (move.Type == MoveType.FreeTradeBuying)
+            {
+                card.IsTargeted = true;
+                GameState.TryBuyCardFromDiscardPile();
             }
 
             if (GameState.IsInCombat)
@@ -235,7 +250,8 @@ namespace ACardGame.UI
                     ActivePlayerDiscardPile,
                     EnemyDiscardPile,
                     ToggleShopButton,
-                    ShowCardsPlayedThisTurnButton
+                    ShowCardsPlayedThisTurnButton,
+                    BackToMenuButton
                 };
 
                 enabledChildren.AddRange(ViewShopDiscardButtons);
@@ -287,7 +303,9 @@ namespace ACardGame.UI
             {
                 GameId = Id,
                 Type = MoveType.BuyingFromShop,
-                CardId = card.Id
+                CardId = card.Id,
+                CardName = card.Name,
+                TurnNumber = GameState.TurnNumber
             };
 
             base.BuyCard(card);
@@ -384,6 +402,29 @@ namespace ACardGame.UI
             base.ActionRefreshShop();
 
             SendMakeMoveMessage();
+        }
+
+        protected override void TryFreeTradeBuy()
+        {
+            var boughtCard = GameState.TryBuyCardFromDiscardPile();
+
+            if (boughtCard != null)
+            {
+                var cards = new List<Card>(CardStackViewer.Cards);
+                cards.Remove(boughtCard);
+                CardStackViewer.Show(cards);
+
+                _makeMoveMessage = new GameMove
+                {
+                    GameId = Id,
+                    Type = MoveType.FreeTradeBuying,
+                    CardId = boughtCard.Id,
+                    CardName = boughtCard.Name,
+                    TurnNumber = GameState.TurnNumber
+                };
+
+                SendMakeMoveMessage();
+            }
         }
 
         protected override void ResolveAccepted(bool skipValidityChecks = false)

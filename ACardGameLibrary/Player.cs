@@ -20,10 +20,7 @@
                 CardLibrary.GetCard("Silver"),
                 CardLibrary.GetCard("Silver"),
                 CardLibrary.GetCard("Silver"),
-                CardLibrary.GetCard("Swordsman"),
-                CardLibrary.GetCard("Julius Caesar"),
-                CardLibrary.GetCard("Market"),
-                CardLibrary.GetCard("Albert Einstein"),
+                CardLibrary.GetCard("Silver")
             };
 
             foreach (var card in Hand)
