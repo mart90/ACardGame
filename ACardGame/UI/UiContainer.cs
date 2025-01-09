@@ -167,6 +167,11 @@ namespace ACardGame.UI
 
             if (child is ILeftClickable clickableChild && clickableChild.OnLeftClickAction != null)
             {
+                if (child is Button)
+                {
+                    AssetManager.PlaySoundEffect("playcard");
+                }
+
                 clickableChild.OnLeftClickAction();
             }
             else if (child is UiContainer childContainer)

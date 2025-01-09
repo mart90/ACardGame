@@ -4,6 +4,8 @@
     {
         public GameStateManager()
         {
+            CardLibrary.NextCardId = 1;
+
             Players = new List<Player>()
             {
                 new("Player1") { IsActive = true },

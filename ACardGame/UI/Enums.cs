@@ -8,6 +8,8 @@
         LoginScreen,
         MultiplayerHome,
         MultiplayerGame,
+
+        Exiting
     }
 
     public enum Direction

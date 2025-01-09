@@ -1,6 +1,8 @@
 ﻿using ACardGameLibrary;
 using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace ACardGame.UI
@@ -86,7 +88,7 @@ namespace ACardGame.UI
             ShopRefreshCostButtons = new List<Button>();
         }
 
-        public void BuildUI()
+        public virtual void BuildUI()
         {
             GoRight();
 
@@ -253,46 +255,25 @@ namespace ACardGame.UI
             };
             AddChild(BackToMenuButton);
             AddSpacing(1);
-            WorshipButton = new Button(AssetManager, ButtonType.Long, 10, true, "Worship", delegate
-            {
-                Worship();
-            });
+            WorshipButton = new Button(AssetManager, ButtonType.Long, 10, true, "Worship", Worship);
             AddChild(WorshipButton);
             AddSpacing(1);
-            BuyGoldButton = new Button(AssetManager, ButtonType.Long, 10, true, "Buy gold (6)", delegate
-            {
-                BuyGold();
-            });
+            BuyGoldButton = new Button(AssetManager, ButtonType.Long, 10, true, "Buy gold (6)", BuyGold);
             AddChild(BuyGoldButton);
             AddSpacing(1);
-            UpgradeShopButton = new Button(AssetManager, ButtonType.Long, 10, true, "Upgrade shop (5)", delegate
-            {
-                UpgradeShop();
-            });
+            UpgradeShopButton = new Button(AssetManager, ButtonType.Long, 10, true, "Upgrade shop (5)", UpgradeShop);
             AddChild(UpgradeShopButton);
             AddSpacing(1);
-            BuySilverButton = new Button(AssetManager, ButtonType.Long, 10, true, "Buy silver (3)", delegate
-            {
-                BuySilver();
-            });
+            BuySilverButton = new Button(AssetManager, ButtonType.Long, 10, true, "Buy silver (3)", BuySilver);
             AddChild(BuySilverButton);
             AddSpacing(1);
-            RefreshShopButton = new Button(AssetManager, ButtonType.Long, 10, true, "Refresh shop", delegate
-            {
-                ActionRefreshShop();
-            });
+            RefreshShopButton = new Button(AssetManager, ButtonType.Long, 10, true, "Refresh shop", ActionRefreshShop);
             AddChild(RefreshShopButton);
             AddSpacing(1);
-            ViewLogButton = new Button(AssetManager, ButtonType.Long, 10, true, "View log", delegate
-            {
-                ViewLog();
-            });
+            ViewLogButton = new Button(AssetManager, ButtonType.Long, 10, true, "View log", ViewLog);
             AddChild(ViewLogButton);
             AddSpacing(1);
-            EndTurnButton = new Button(AssetManager, ButtonType.Long, 10, true, "End turn", delegate
-            {
-                EndTurn();
-            });
+            EndTurnButton = new Button(AssetManager, ButtonType.Long, 10, true, "End turn", EndTurn);
             AddChild(EndTurnButton);
             AddSpacing(-3.5);
             AcceptButton = new Button(AssetManager, ButtonType.Long, 10, true, "Accept", delegate
@@ -307,17 +288,14 @@ namespace ACardGame.UI
             GoRight();
 
             // Battlefield
-            SetCursor(1.5, 7);
-            Battlefield = new Battlefield(AssetManager, 57, true);
+            SetCursor(0.5, 6.5);
+            Battlefield = new Battlefield(AssetManager, 59, true);
             Battlefield.AddButtons(this);
             AddChild(Battlefield);
 
             // Toggle shop button
-            SetCursor(25, 1.5);
-            ToggleShopButton = new Button(AssetManager, ButtonType.Long, 10, true, "Toggle shops", delegate
-            {
-                ToggleShopVisible();
-            })
+            SetCursor(29, 1.5);
+            ToggleShopButton = new Button(AssetManager, ButtonType.Long, 10, true, "Toggle shops", ToggleShopVisible)
             {
                 IsVisible = false
             };
@@ -498,10 +476,14 @@ namespace ACardGame.UI
                     PlayCard(card);
                 }
             }
+            else
+            {
+                AssetManager.PlaySoundEffect("error", 0.6f);
+            }
 
             if (GameState.IsInCombat)
             {
-                Battlefield.Refresh(GameState, Player.IsAttacking);
+                Battlefield.Refresh(GameState, Player);
             }
 
             RefreshHand();
@@ -534,6 +516,7 @@ namespace ACardGame.UI
 
         protected virtual void PlayCard(Card card)
         {
+            AssetManager.PlaySoundEffect("draw");
             GameState.PlayCard(card);
         }
 
@@ -544,6 +527,7 @@ namespace ACardGame.UI
 
         protected virtual void BuyCard(Card card)
         {
+            AssetManager.PlaySoundEffect("draw");
             GameState.BuyCard(card);
         }
 
@@ -553,6 +537,7 @@ namespace ACardGame.UI
 
             if (boughtCard != null)
             {
+                AssetManager.PlaySoundEffect("draw");
                 var cards = new List<Card>(CardStackViewer.Cards);
                 cards.Remove(boughtCard);
                 CardStackViewer.Show(cards);
@@ -650,37 +635,47 @@ namespace ACardGame.UI
 
         public override void LeftClick(Point position)
         {
-            if (LogViewer.IsVisible)
+            try
             {
-                LogViewer.IsVisible = false;
-            }
+                if (LogViewer.IsVisible)
+                {
+                    LogViewer.IsVisible = false;
+                }
 
-            if (MessageToPlayer.IsVisible)
+                if (MessageToPlayer.IsVisible)
+                {
+                    MessageToPlayer.IsVisible = false;
+                }
+
+                var child = FilterChildren(e => e.AbsoluteLocation.Contains(position) && e.IsVisible)
+                    .FirstOrDefault();
+
+                if (Frozen && child != BackToMenuButton)
+                {
+                    return;
+                }
+
+                if (child != CardStackViewer || (!GameState.RequireAccept && !Player.CanFreeTrade))
+                {
+                    CardStackViewer.IsVisible = false;
+                }
+
+                base.LeftClick(position);
+
+                if (Battlefield.IsVisible)
+                {
+                    Battlefield.Refresh(GameState, Player);
+                }
+
+                RefreshHand();
+            }
+            catch (Exception e)
             {
-                MessageToPlayer.IsVisible = false;
+                File.AppendAllText(AppDomain.CurrentDomain.BaseDirectory.ToString() + "/ErrorLog.txt", $"\n\nError resolving left click. Exception:\n");
+                File.AppendAllText(AppDomain.CurrentDomain.BaseDirectory.ToString() + "/ErrorLog.txt", e.ToString());
+
+                throw;
             }
-
-            var child = FilterChildren(e => e.AbsoluteLocation.Contains(position) && e.IsVisible)
-                .FirstOrDefault();
-
-            if (Frozen && child != BackToMenuButton)
-            {
-                return;
-            }
-
-            if (child != CardStackViewer || (!GameState.RequireAccept && !Player.CanFreeTrade))
-            {
-                CardStackViewer.IsVisible = false;
-            }
-
-            base.LeftClick(position);
-
-            if (Battlefield.IsVisible)
-            {
-                Battlefield.Refresh(GameState, Player.IsAttacking);
-            }
-
-            RefreshHand();
         }
 
         protected void RefreshHand()
@@ -795,6 +790,7 @@ namespace ACardGame.UI
 
             if (!skipValidityChecks && !ValidTargets(card, targets))
             {
+                AssetManager.PlaySoundEffect("error", 0.6f);
                 return;
             }
 
@@ -823,7 +819,7 @@ namespace ACardGame.UI
 
             if (GameState.IsInCombat)
             {
-                Battlefield.Refresh(GameState, Player.IsAttacking);
+                Battlefield.Refresh(GameState, Player);
             }
 
             if (!GameState.ResolvingAfterPlay || (GameState.ResolvingAfterPlay && doneResolvingAfterplay))

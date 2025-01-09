@@ -2,7 +2,9 @@
 using ACardGameServer;
 using Microsoft.Xna.Framework;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace ACardGame.UI
@@ -19,6 +21,8 @@ namespace ACardGame.UI
         public override Player Enemy => GameState.Players.Single(e => e.Name != AuthenticatedUser.Name);
         public override bool IsMyTurn => Player.IsActive;
 
+        public Button ResignButton { get; set; }
+
         private GameMove _makeMoveMessage;
 
         public MultiplayerGame(AssetManager assetManager, GameStateManager gameStateManager, ServerConnection server) : base(assetManager, gameStateManager)
@@ -27,6 +31,16 @@ namespace ACardGame.UI
             CorrespondingUiState = UiState.MultiplayerGame;
 
             _server = server;
+        }
+
+        public override void BuildUI()
+        {
+            base.BuildUI();
+
+            SetCursor(89, 25);
+            ResignButton = new Button(AssetManager, ButtonType.Long, 10, true, "Resign", Resign);
+
+            AddChild(ResignButton);
         }
 
         public override void Update()
@@ -71,6 +85,8 @@ namespace ACardGame.UI
                 EnemyName.Text = Enemy.Name;
             }
 
+            ResignButton.IsVisible = IsMyTurn && GameState.Winner == null;
+
             if (GameState.Winner != null && Player == GameState.Winner && !_resultReported)
             {
                 var response = _server.SendResult();
@@ -83,80 +99,102 @@ namespace ACardGame.UI
 
         private void ResolveGameMove(GameMove move)
         {
-            Card card = null;
-            if ( (move.Type == MoveType.PlayingActionQueued))
+            try
             {
-                card = GameState.ActionQueued;
-            }
-            else if (move.CardId != null)
-            {
-                card = GameState.GetCardById(move.CardId.Value);
-            }
+                Card card = null;
+                if ((move.Type == MoveType.PlayingActionQueued))
+                {
+                    card = GameState.ActionQueued;
+                }
+                else if (move.CardId != null)
+                {
+                    card = GameState.GetCardById(move.CardId.Value);
+                }
 
-            if (move.Type == MoveType.EndingTurn)
-            {
-                GameState.SwitchTurn();
-            }
-            else if (move.Type == MoveType.Passing)
-            {
-                GameState.CombatPass();
-            }
-            else if (move.Type == MoveType.BuyingFromShop)
-            {
-                GameState.BuyCard(card);
-            }
-            else if (move.Type == MoveType.RefreshingShop)
-            {
-                GameState.ActionRefreshShop();
-            }
-            else if (move.Type == MoveType.UpgradingShop)
-            {
-                GameState.UpgradeShop();
-            }
-            else if (move.Type == MoveType.BuyingSilver)
-            {
-                GameState.BuySilver();
-            }
-            else if (move.Type == MoveType.BuyingGold)
-            {
-                GameState.BuyGold();
-            }
-            else if (move.Type == MoveType.Worshiping)
-            {
-                GameState.Worship();
-            }
-            else if (move.Type == MoveType.PlayingCard)
-            {
-                ResolvePlayCard(move, card);
-            }
-            else if (move.Type == MoveType.PlayingActionQueued)
-            {
-                GameState.ActionQueued.Owner.Hand.Add(GameState.ActionQueued);
-                ResolvePlayCard(move, GameState.ActionQueued);
-                GameState.ActionQueued = null;
-            }
-            else if (move.Type == MoveType.EventUsedInput)
-            {
-                ResolveAcceptParams(move);
-            }
-            else if (move.Type == MoveType.FreeTradeBuying)
-            {
-                card.IsTargeted = true;
-                GameState.TryBuyCardFromDiscardPile();
-            }
+                if (move.Type == MoveType.EndingTurn)
+                {
+                    GameState.SwitchTurn();
+                    AssetManager.PlaySoundEffect("game_start");
+                }
+                else if (move.Type == MoveType.Passing)
+                {
+                    GameState.CombatPass();
+                    AssetManager.PlaySoundEffect("game_start");
+                }
+                else if (move.Type == MoveType.BuyingFromShop)
+                {
+                    GameState.BuyCard(card);
+                }
+                else if (move.Type == MoveType.RefreshingShop)
+                {
+                    GameState.ActionRefreshShop();
+                }
+                else if (move.Type == MoveType.UpgradingShop)
+                {
+                    GameState.UpgradeShop();
+                }
+                else if (move.Type == MoveType.BuyingSilver)
+                {
+                    GameState.BuySilver();
+                }
+                else if (move.Type == MoveType.BuyingGold)
+                {
+                    GameState.BuyGold();
+                }
+                else if (move.Type == MoveType.Worshiping)
+                {
+                    GameState.Worship();
+                }
+                else if (move.Type == MoveType.PlayingCard)
+                {
+                    ResolvePlayCard(move, card);
+                }
+                else if (move.Type == MoveType.PlayingActionQueued)
+                {
+                    GameState.ActionQueued.Owner.Hand.Add(GameState.ActionQueued);
+                    ResolvePlayCard(move, GameState.ActionQueued);
+                    GameState.ActionQueued = null;
+                }
+                else if (move.Type == MoveType.EventUsedInput)
+                {
+                    ResolveAcceptParams(move);
+                }
+                else if (move.Type == MoveType.FreeTradeBuying)
+                {
+                    card.IsTargeted = true;
+                    AssetManager.PlaySoundEffect("draw");
+                    GameState.TryBuyCardFromDiscardPile();
+                }
+                else if (move.Type == MoveType.Resigning)
+                {
+                    GameState.Winner = Player;
+                }
 
-            if (GameState.IsInCombat)
-            {
-                Battlefield.Refresh(GameState, Player.IsAttacking);
-            }
+                if (GameState.IsInCombat)
+                {
+                    Battlefield.Refresh(GameState, Player);
+                }
 
-            RefreshHand();
+                RefreshHand();
+            }
+            catch (Exception e)
+            {
+                File.AppendAllText(AppDomain.CurrentDomain.BaseDirectory.ToString() + "/ErrorLog.txt", $"\n\nError resolving game move: {JsonConvert.SerializeObject(move)}\nException:\n");
+                File.AppendAllText(AppDomain.CurrentDomain.BaseDirectory.ToString() + "/ErrorLog.txt", e.ToString());
+
+                throw;
+            }
         }
 
         private void ResolvePlayCard(GameMove move, Card card)
         {
+            bool combatSoundPlayed = false;
+
             if (card.IsCombatCard && !GameState.IsInCombat)
             {
+                AssetManager.PlaySoundEffect("combat", 0.2f);
+                combatSoundPlayed = true;
+
                 ToggleShopVisible();
                 ToggleShopButton.IsVisible = true;
             }
@@ -164,21 +202,35 @@ namespace ACardGame.UI
             if (!move.AcceptParams.Any())
             {
                 GameState.PlayCard(card);
-                
-                return;
-            }
-
-            if (!CardTargetsOnPlay(card))
-            {
-                GameState.PlayCard(card);
             }
             else
             {
-                card.IsTargeting = true;
-                GameState.RequireAccept = true;
+                if (!CardTargetsOnPlay(card))
+                {
+                    GameState.PlayCard(card);
+                }
+                else
+                {
+                    card.IsTargeting = true;
+                    GameState.RequireAccept = true;
+                }
+
+                ResolveAcceptParams(move);
             }
 
-            ResolveAcceptParams(move);
+            if (combatSoundPlayed)
+            {
+                return;
+            }
+
+            if (IsMyTurn)
+            {
+                AssetManager.PlaySoundEffect("game_start");
+            }
+            else
+            {
+                AssetManager.PlaySoundEffect("draw");
+            }
         }
 
         private void ResolveAcceptParams(GameMove move)
@@ -242,6 +294,11 @@ namespace ACardGame.UI
                 if (child == null)
                 {
                     return;
+                }
+
+                if (child is Battlefield)
+                {
+                    Battlefield.LeftClick(position);
                 }
 
                 var enabledChildren = new List<UiElement>
@@ -400,6 +457,22 @@ namespace ACardGame.UI
             };
 
             base.ActionRefreshShop();
+
+            SendMakeMoveMessage();
+        }
+
+        private void Resign()
+        {
+            GameState.Winner = Enemy;
+
+            ResignButton.IsVisible = false;
+            BackToMenuButton.IsVisible = true;
+
+            _makeMoveMessage = new GameMove
+            {
+                GameId = Id,
+                Type = MoveType.Resigning
+            };
 
             SendMakeMoveMessage();
         }
@@ -606,7 +679,7 @@ namespace ACardGame.UI
 
             if (GameState.IsInCombat)
             {
-                Battlefield.Refresh(GameState, Player.IsAttacking);
+                Battlefield.Refresh(GameState, Player);
             }
 
             if (!GameState.ResolvingAfterPlay || (GameState.ResolvingAfterPlay && doneResolvingAfterplay))

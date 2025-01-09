@@ -43,13 +43,13 @@ namespace ACardGame
 
         protected override void Initialize()
         {
-            ScreenWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width;
-            ScreenHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height;
-            _graphics.IsFullScreen = true;
+            //ScreenWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width;
+            //ScreenHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height;
+            //_graphics.IsFullScreen = true;
 
-            //ScreenWidth = 1920;
-            //ScreenHeight = 1080;
-            //_graphics.IsFullScreen = false;
+            ScreenWidth = 1920;
+            ScreenHeight = 1080;
+            _graphics.IsFullScreen = false;
 
             _graphics.PreferredBackBufferWidth = ScreenWidth;
             _graphics.PreferredBackBufferHeight = ScreenHeight;
@@ -77,11 +77,6 @@ namespace ACardGame
 
         protected override void Update(GameTime gameTime)
         {
-            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
-            {
-                Exit();
-            }
-
             if (_activeWindow.NewUiState != null)
             {
                 if (_activeWindow.NewUiState == UiState.HotSeatGame)
@@ -94,13 +89,21 @@ namespace ACardGame
                     _topLevelWindows.RemoveAll(e => e is MultiplayerGame);
                     _topLevelWindows.Add(((MultiplayerHome)_activeWindow).CreatedGame);
                 }
+                else if (_activeWindow.NewUiState == UiState.Exiting)
+                {
+                    Exit();
+                    return;
+                }
 
                 var newWindow = _topLevelWindows.Single(e => e.CorrespondingUiState == _activeWindow.NewUiState);
                 _activeWindow.NewUiState = null;
                 _activeWindow = newWindow;
             }
 
-            HandleMouseState();
+            if (IsActive)
+            {
+                HandleMouseState();
+            }
 
             _activeWindow.Update();
 

@@ -23,9 +23,10 @@ namespace ACardGame.UI
             return _content.Load<SpriteFont>($"fonts/{filename}");
         }
 
-        public SoundEffect LoadSoundEffect(string filename)
+        public void PlaySoundEffect(string filename, float volume = 1)
         {
-            return _content.Load<SoundEffect>($"soundEffects/{filename}");
+            var sound = _content.Load<SoundEffect>($"sounds/{filename}");
+            sound.Play(volume, 0, 0);
         }
 
         public Texture2D LoadCardTexture(string cardName)

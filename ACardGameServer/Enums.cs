@@ -40,6 +40,7 @@
         EndingTurn,
         EventUsedInput,
         PlayingActionQueued,
-        FreeTradeBuying
+        FreeTradeBuying,
+        Resigning
     }
 }

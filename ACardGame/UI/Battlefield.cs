@@ -38,7 +38,7 @@ namespace ACardGame.UI
             AddChild(ActivePlayerSupportsButton);
         }
 
-        public void Refresh(GameStateManager gameState, bool playerIsAttacking)
+        public void Refresh(GameStateManager gameState, Player visiblePlayer)
         {
             Children.RemoveAll(e => e is BattlefieldLane);
 
@@ -47,12 +47,12 @@ namespace ACardGame.UI
             foreach (CreatureCard creature in gameState.AttackingCreatures)
             {
                 var lane = new BattlefieldLane(AssetManager, creature.BlockedBy.Any() ? creature.BlockedBy.Count * 12.5 : 12.5, true);
-                lane.Refresh(creature, playerIsAttacking);
+                lane.Refresh(creature, visiblePlayer.IsAttacking);
                 AddChild(lane);
                 AddSpacing(2.5);
             }
 
-            var activePlayerSupports = gameState.GetPlayerSupports(true);
+            var activePlayerSupports = gameState.GetPlayerSupports(visiblePlayer.IsActive);
             if (activePlayerSupports.Any())
             {
                 ActivePlayerSupportsButton.IsVisible = true;
@@ -63,7 +63,7 @@ namespace ACardGame.UI
                 ActivePlayerSupportsButton.IsVisible = false;
             }
 
-            var enemySupports = gameState.GetPlayerSupports(false);
+            var enemySupports = gameState.GetPlayerSupports(!visiblePlayer.IsActive);
             if (enemySupports.Any())
             {
                 EnemySupportsButton.IsVisible = true;

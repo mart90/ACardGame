@@ -4,7 +4,7 @@ namespace ACardGameLibrary
 {
     public static class CardLibrary
     {
-        private static int _nextCardId = 1;
+        public static int NextCardId = 1;
 
         public static Card GetCard(string cardName)
         {
@@ -12,8 +12,8 @@ namespace ACardGameLibrary
             var newCard = card.Clone();
             newCard.AddEffects(card.Effects);
 
-            newCard.Id = _nextCardId;
-            _nextCardId++;
+            newCard.Id = NextCardId;
+            NextCardId++;
             
             return newCard;
         }
@@ -2629,6 +2629,7 @@ namespace ACardGameLibrary
                 Cost = 2,
                 AmountInShopPool = 2,
                 TargetsHand = true,
+                MinTargets = 1,
                 Types = new List<CardType>
                 {
                     CardType.Action

@@ -389,3 +389,39 @@
 /processorParam:TextureFormat=Color
 /build:graphics/UI/wallpaper.png
 
+#begin sounds/combat.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:sounds/combat.wav
+
+#begin sounds/draw.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:sounds/draw.wav
+
+#begin sounds/error.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:sounds/error.wav
+
+#begin sounds/game_start.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:sounds/game_start.wav
+
+#begin sounds/playcard.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:sounds/playcard.wav
+
+#begin sounds/playcard.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:sounds/playcard.wav
+
