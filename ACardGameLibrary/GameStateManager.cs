@@ -235,7 +235,11 @@
 
             AddPublicLog($"{player.Name} bought {card.Name} for {card.Cost.Value} currency");
 
-            ActivePlayer.Shop.Remove(card);
+            if (ActivePlayer.Shop.Contains(card))
+            {
+                card.Cost += EventListeners.Count(e => e.Name == "MerchantRefreshing");
+                ActivePlayer.Shop.Remove(card);
+            }
 
             TriggerEvent(GameEvent.Buying);
 

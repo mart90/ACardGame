@@ -1293,6 +1293,8 @@ namespace ACardGameLibrary
                             game.RemoveCardFromBattlefield(target);
 
                             game.MoveToDiscard(target);
+
+                            game.SwitchActivePlayer();
                         }
                     },
                 }

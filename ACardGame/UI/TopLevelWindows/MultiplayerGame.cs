@@ -47,6 +47,20 @@ namespace ACardGame.UI
         {
             base.Update();
 
+            //// FOR DEBUGGING
+            //var allcards = GameState.AllCards;
+            //foreach (string name in allcards
+            //    .Where(e => e.Name != "Silver" && e.Name != "Gold")
+            //    .Select(e => e.Name)
+            //    .Distinct())
+            //{
+            //    if (allcards.Count(e => e.Name == name) > 2)
+            //    {
+            //        Logger.LogDebug($"Uh oh");
+            //    }
+            //}
+            //////////////////
+
             if (UpdateCounter % 15 == 0)
             {
                 _server.PollEvents();
@@ -179,9 +193,7 @@ namespace ACardGame.UI
             }
             catch (Exception e)
             {
-                File.AppendAllText(AppDomain.CurrentDomain.BaseDirectory.ToString() + "/ErrorLog.txt", $"\n\nError resolving game move: {JsonConvert.SerializeObject(move)}\nException:\n");
-                File.AppendAllText(AppDomain.CurrentDomain.BaseDirectory.ToString() + "/ErrorLog.txt", e.ToString());
-
+                Logger.LogError($"Error resolving game move: {JsonConvert.SerializeObject(move)}\nException:\n {e}");
                 throw;
             }
         }
@@ -718,6 +730,11 @@ namespace ACardGame.UI
 
         private void SendMakeMoveMessage()
         {
+            if (Main.DebugLogEnabled)
+            {
+                Logger.LogDebug($"Sending move:\n{JsonConvert.SerializeObject(_makeMoveMessage)}");
+            }
+
             var response = _server.SendMakeMove(_makeMoveMessage);
 
             // TODO error handling

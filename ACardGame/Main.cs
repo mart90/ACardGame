@@ -28,7 +28,9 @@ namespace ACardGame
 
         public static int ScreenWidth;
         public static int ScreenHeight;
+
         public const string GameVersion = "0.1";
+        public const bool DebugLogEnabled = true;
 
         public Main()
         {
@@ -57,6 +59,8 @@ namespace ACardGame
             _graphics.ApplyChanges();
 
             Window.TextInput += HandleTextInput;
+
+            System.IO.Directory.CreateDirectory($"{AppDomain.CurrentDomain.BaseDirectory}/log");
 
             base.Initialize();
         }

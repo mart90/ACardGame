@@ -671,9 +671,7 @@ namespace ACardGame.UI
             }
             catch (Exception e)
             {
-                File.AppendAllText(AppDomain.CurrentDomain.BaseDirectory.ToString() + "/ErrorLog.txt", $"\n\nError resolving left click. Exception:\n");
-                File.AppendAllText(AppDomain.CurrentDomain.BaseDirectory.ToString() + "/ErrorLog.txt", e.ToString());
-
+                Logger.LogError($"Error resolving left click. Exception:\n {e}");
                 throw;
             }
         }
@@ -861,7 +859,7 @@ namespace ACardGame.UI
 
         public void ShowSupportsInPlay(bool isMySupports)
         {
-            CardStackViewer.Show(GameState.GetPlayerSupports(isMySupports).Cast<Card>().ToList());
+            CardStackViewer.Show(GameState.GetPlayerSupports(isMySupports == Player.IsActive).Cast<Card>().ToList());
         }
 
         public override void Update()
