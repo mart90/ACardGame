@@ -117,14 +117,7 @@
                 return false;
             }
 
-            if ((card.Name == "Assassin" || card.Name == "Copy" || card.Name == "Trebuchet")
-                && IsInCombat 
-                && !player.IsAttacking)
-            {
-                return false;
-            }
-
-            if (card.Name == "Recall" && player.DiscardPile.Count == 0)
+            if (card.AdditionalPlayConditions != null && !card.AdditionalPlayConditions(this))
             {
                 return false;
             }
@@ -219,7 +212,7 @@
         {
             if (player.Leader != null)
             {
-                RemoveListener(player.Leader.Name);
+                RemoveAllListeners(player.Leader.Name);
             }
 
             player.Leader = card;
@@ -283,7 +276,7 @@
             EventListeners.Add(listener);
         }
 
-        public void RemoveListener(string name, Player owner = null)
+        public void RemoveFirstListener(string name, Player owner = null)
         {
             var query = EventListeners.AsEnumerable();
 
@@ -302,6 +295,18 @@
             }
 
             EventListeners.Remove(listener);
+        }
+
+        public void RemoveAllListeners (string name, Player owner = null)
+        {
+            if (owner != null)
+            {
+                EventListeners.RemoveAll(e => e.Name == name && e.Owner == owner);
+            }
+            else
+            {
+                EventListeners.RemoveAll(e => e.Name == name);
+            }
         }
 
         /// <summary>

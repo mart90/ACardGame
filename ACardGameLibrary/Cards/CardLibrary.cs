@@ -350,7 +350,7 @@ namespace ACardGameLibrary
                 Name = "Adam Smith",
                 Text = "When you buy a currency card, put it into your hand.",
                 IsInShopPool = true,
-                Cost = 3,
+                Cost = 4,
                 AmountInShopPool = 1,
                 Types = new List<CardType>
                 {
@@ -527,7 +527,7 @@ namespace ACardGameLibrary
                 Name = "Charlemagne",
                 Text = "When attacking, the first creature you play can't be blocked.",
                 IsInShopPool = true,
-                Cost = 4,
+                Cost = 3,
                 AmountInShopPool = 1,
                 Types = new List<CardType>
                 {
@@ -747,7 +747,7 @@ namespace ACardGameLibrary
                                                 owner.CardsPlayedThisTurn.RemoveAt(owner.CardsPlayedThisTurn.Count - 1);
                                             }
 
-                                            game.RemoveListener("Albert Einstein - Copy");
+                                            game.RemoveFirstListener("Albert Einstein - Copy");
                                         }
                                     });
                                 }
@@ -777,7 +777,7 @@ namespace ACardGameLibrary
 
             new Card
             {
-                Name = "Queen Victoria",
+                Name = "Victoria",
                 Text = "When you buy a card, put it into your hand.",
                 IsInShopPool = true,
                 Cost = 6,
@@ -795,7 +795,7 @@ namespace ACardGameLibrary
                         {
                             game.AddEventListener(new GameEventListener
                             {
-                                Name = "Queen Victoria",
+                                Name = "Victoria",
                                 Owner = owner,
                                 OwnersTurnOnly = true,
                                 Trigger = GameEvent.Buying,
@@ -845,6 +845,89 @@ namespace ACardGameLibrary
                                         AddedPower = 5,
                                         Conditions = (creature) => !creature.Owner.IsAttacking
                                     });
+                                }
+                            });
+                        }
+                    }
+                }
+            },
+
+            new Card
+            {
+                Name = "Elizabeth",
+                Text = "When you play an action card, draw a card.",
+                IsInShopPool = true,
+                Cost = 6,
+                AmountInShopPool = 1,
+                Types = new List<CardType>
+                {
+                    CardType.Leader
+                },
+                Effects = new List<CardEffect>
+                {
+                    new CardEffect
+                    {
+                        EffectPhase = CardEffectPhase.OnPlay,
+                        Effect = (game, owner) =>
+                        {
+                            game.AddEventListener(new GameEventListener
+                            {
+                                Name = "Elizabeth",
+                                Owner = owner,
+                                OwnersTurnOnly = true,
+                                Trigger = GameEvent.PlayingAction,
+                                Effect = (game, owner) =>
+                                {
+                                    game.TriggerEvent(GameEvent.DrawingCardsFromCardEffect);
+                                    owner.DrawCards(1);
+                                }
+                            });
+                        }
+                    }
+                }
+            },
+
+            new Card
+            {
+                Name = "Beethoven",
+                Text = "Cards in your shop cost 2 less.",
+                IsInShopPool = true,
+                Cost = 6,
+                AmountInShopPool = 1,
+                Types = new List<CardType>
+                {
+                    CardType.Leader
+                },
+                Effects = new List<CardEffect>
+                {
+                    new CardEffect
+                    {
+                        EffectPhase = CardEffectPhase.OnPlay,
+                        Effect = (game, owner) =>
+                        {
+                            owner.Shop.ForEach(e => e.Cost -= 2);
+
+                            game.AddEventListener(new GameEventListener
+                            {
+                                Name = "Beethoven",
+                                Owner = owner,
+                                OwnersTurnOnly = true,
+                                Trigger = GameEvent.RefreshingShop,
+                                Effect = (game, owner) =>
+                                {
+                                    owner.Shop.ForEach(e => e.Cost += 2);
+                                }
+                            });
+
+                            game.AddEventListener(new GameEventListener
+                            {
+                                Name = "Beethoven",
+                                Owner = owner,
+                                OwnersTurnOnly = true,
+                                Trigger = GameEvent.RefreshedShop,
+                                Effect = (game, owner) =>
+                                {
+                                    owner.Shop.ForEach(e => e.Cost -= 2);
                                 }
                             });
                         }
@@ -912,7 +995,7 @@ namespace ACardGameLibrary
                                         game.Winner = owner;
                                     }
 
-                                    game.RemoveListener("Sauron", owner);
+                                    game.RemoveFirstListener("Sauron", owner);
                                 }
                             });
                         }
@@ -922,7 +1005,7 @@ namespace ACardGameLibrary
                         EffectPhase = CardEffectPhase.OnRemove,
                         Effect = (game, owner) =>
                         {
-                            game.RemoveListener("Sauron", owner);
+                            game.RemoveFirstListener("Sauron", owner);
                         }
                     }
                 }
@@ -982,7 +1065,7 @@ namespace ACardGameLibrary
                                         }
                                     }
 
-                                    game.RemoveListener("Thief", owner);
+                                    game.RemoveFirstListener("Thief", owner);
                                 }
                             });
                         }
@@ -1122,6 +1205,7 @@ namespace ACardGameLibrary
                 IsInShopPool = true,
                 Cost = 3,
                 AmountInShopPool = 2,
+                AdditionalPlayConditions = (game) => game.ActivePlayer.IsAttacking || !game.IsInCombat,
                 Types = new List<CardType>
                 {
                     CardType.Creature,
@@ -1233,6 +1317,38 @@ namespace ACardGameLibrary
                                 Conditions = (creature) => creature.Name == "Pikeman",
                                 ConditionsEnemy = (creature) => creature.Types.Contains(CardType.Cavalry)
                             });
+                        }
+                    }
+                }
+            },
+
+            new CreatureCard
+            {
+                Name = "Hero",
+                Text = "When you play this, it gets +1/+1 for each other creature you have in play.",
+                Power = 1,
+                Defense = 1,
+                IsInShopPool = true,
+                Cost = 4,
+                AmountInShopPool = 2,
+                Types = new List<CardType>
+                {
+                    CardType.Creature,
+                    CardType.Infantry
+                },
+                Effects = new List<CardEffect>
+                {
+                    new CardEffect
+                    {
+                        EffectPhase = CardEffectPhase.OnPlay,
+                        Effect = (game, owner) =>
+                        {
+                            var hero = (CreatureCard)game.CardBeingPlayed;
+
+                            int creaturesInPlay = owner.ActiveCombatCards.OfType<CreatureCard>().Count();
+
+                            hero.TemporaryAddedPower = creaturesInPlay;
+                            hero.TemporaryAddedDefense = creaturesInPlay;
                         }
                     }
                 }
@@ -1645,13 +1761,14 @@ namespace ACardGameLibrary
             new CreatureCard
             {
                 Name = "Trebuchet",
-                Text = "Can't block. Trample. (When this is successfully blocked, it deals its power minus the blockers' defense in damage to your opponent).",
+                Text = "Can't block. Trample. (When this is successfully blocked, it deals its power minus the blockers' defense in damage).",
                 Power = 7,
                 Defense = 1,
                 HasTrample = true,
                 IsInShopPool = true,
                 Cost = 6,
                 AmountInShopPool = 2,
+                AdditionalPlayConditions = (game) => game.ActivePlayer.IsAttacking || !game.IsInCombat,
                 Types = new List<CardType>
                 {
                     CardType.Creature,
@@ -1795,8 +1912,8 @@ namespace ACardGameLibrary
                                 Trigger = GameEvent.EndingCombat,
                                 Effect = (game, owner) =>
                                 {
-                                    game.RemoveListener("Pegasus", owner);
-                                    game.RemoveListener("PegasusEnd", owner);
+                                    game.RemoveFirstListener("Pegasus", owner);
+                                    game.RemoveFirstListener("PegasusEnd", owner);
                                 }
                             });
                         }
@@ -1806,8 +1923,8 @@ namespace ACardGameLibrary
                         EffectPhase = CardEffectPhase.OnRemove,
                         Effect = (game, owner) =>
                         {
-                            game.RemoveListener("Pegasus", owner);
-                            game.RemoveListener("PegasusEnd", owner);
+                            game.RemoveFirstListener("Pegasus", owner);
+                            game.RemoveFirstListener("PegasusEnd", owner);
                         }
                     },
                 }
@@ -1856,7 +1973,7 @@ namespace ACardGameLibrary
 
             new Equipment
             {
-                Name = "Hero",
+                Name = "Lifelink",
                 Text = "Attach to a friendly non-siege creature. At the end of combat, you gain life equal to its power.",
                 IsInShopPool = true,
                 Cost = 2,
@@ -1868,29 +1985,29 @@ namespace ACardGameLibrary
                         EffectPhase = CardEffectPhase.OnPlay,
                         Effect = (game, owner) =>
                         {
-                            if (game.EventListeners.Any(e => e.Name == "Hero" && e.Owner == owner))
+                            if (game.EventListeners.Any(e => e.Name == "Lifelink" && e.Owner == owner))
                             {
                                 return;
                             }
 
                             game.AddEventListener(new GameEventListener
                             {
-                                Name = "Hero",
+                                Name = "Lifelink",
                                 Owner = owner,
                                 OwnersTurnOnly = false,
                                 Trigger = GameEvent.EndingCombat,
                                 Effect = (game, owner) =>
                                 {
-                                    var heroes = owner.ActiveCombatCards.Where(e => e is CreatureCard creature && creature.AttachedEquipments.Any(e => e.Name == "Hero")).Cast<CreatureCard>();
+                                    var lifelinkedCreatures = owner.ActiveCombatCards.Where(e => e is CreatureCard creature && creature.AttachedEquipments.Any(e => e.Name == "Lifelink")).Cast<CreatureCard>();
 
-                                    foreach (var hero in heroes)
+                                    foreach (var creature in lifelinkedCreatures)
                                     {
-                                        int heroPower = game.CreaturePower(hero);
-                                        owner.Life += heroPower;
-                                        game.AddPublicLog($"{owner.Name} gained {heroPower} life from Hero");
+                                        int creaturePower = game.CreaturePower(creature);
+                                        owner.Life += creaturePower;
+                                        game.AddPublicLog($"{owner.Name} gained {creaturePower} life from Lifelink");
                                     }
 
-                                    game.RemoveListener("Hero", owner);
+                                    game.RemoveFirstListener("Lifelink", owner);
                                 }
                             });
                         }
@@ -2024,6 +2141,7 @@ namespace ACardGameLibrary
                 {
                     CardType.Creature
                 },
+                AdditionalPlayConditions = (game) => game.ActivePlayer.IsAttacking || !game.IsInCombat,
                 Effects = new List<CardEffect>
                 {
                     new CardEffect
@@ -2055,7 +2173,7 @@ namespace ACardGameLibrary
                                         .First();
 
                                     game.RemoveCardFromBattlefield(copy);
-                                    game.RemoveListener("Copy");
+                                    game.RemoveFirstListener("Copy");
                                 }
                             });
 
@@ -2134,7 +2252,7 @@ namespace ACardGameLibrary
                                         game.AddPublicLog($"{creature.Name} was returned to {owner.Name}'s hand");
                                     }
 
-                                    game.RemoveListener("Vigilance", owner);
+                                    game.RemoveFirstListener("Vigilance", owner);
                                 }
                             });
                         }
@@ -2208,7 +2326,7 @@ namespace ACardGameLibrary
                                         game.AddPublicLog($"{owner.Name}'s Wololo converted {convertedCreature.Name}");
                                     }
 
-                                    game.RemoveListener("Wololo", owner);
+                                    game.RemoveFirstListener("Wololo", owner);
                                 }
                             });
                         }
@@ -2250,7 +2368,7 @@ namespace ACardGameLibrary
                                         creature.Types.Remove(CardType.Flying);
                                     }
 
-                                    game.RemoveListener("Wings", owner);
+                                    game.RemoveFirstListener("Wings", owner);
                                 }
                             });
                         }
@@ -2371,7 +2489,7 @@ namespace ACardGameLibrary
                                 {
                                     game.DealDamage(owner.ActiveCombatCards.Count(e => e is CreatureCard));
                                     game.AddPublicLog($"{owner.Name}'s Flanking dealt {game.DamageBeingDealt} damage");
-                                    game.RemoveListener("Flanking", owner);
+                                    game.RemoveFirstListener("Flanking", owner);
                                 }
                             });
                         }
@@ -2381,7 +2499,7 @@ namespace ACardGameLibrary
                         EffectPhase = CardEffectPhase.OnRemove,
                         Effect = (game, owner) =>
                         {
-                            game.RemoveListener("Flanking", owner);
+                            game.RemoveFirstListener("Flanking", owner);
                         }
                     },
                 }
@@ -2390,9 +2508,9 @@ namespace ACardGameLibrary
             new SupportCard
             {
                 Name = "Overwhelm",
-                Text = "When you play a card with cost 5 or less during this combat, draw a card.",
+                Text = "When you play a card with cost 4 or less during this combat, draw a card.",
                 IsInShopPool = true,
-                Cost = 6,
+                Cost = 5,
                 AmountInShopPool = 2,
                 IsPermanent = true,
                 Effects = new List<CardEffect>
@@ -2404,7 +2522,7 @@ namespace ACardGameLibrary
                         {
                             var effect = delegate (GameStateManager game, Player owner)
                             {
-                                if (game.CardBeingPlayed.Cost > 5)
+                                if (game.CardBeingPlayed.Cost > 4)
                                 {
                                     return;
                                 }
@@ -2437,9 +2555,9 @@ namespace ACardGameLibrary
                                 Trigger = GameEvent.EndingCombat,
                                 Effect = (game, owner) =>
                                 {
-                                    game.RemoveListener("OverwhelmCreature", owner);
-                                    game.RemoveListener("OverwhelmSupport", owner);
-                                    game.RemoveListener("OverwhelmEnd", owner);
+                                    game.RemoveFirstListener("OverwhelmCreature", owner);
+                                    game.RemoveFirstListener("OverwhelmSupport", owner);
+                                    game.RemoveFirstListener("OverwhelmEnd", owner);
                                 }
                             });
                         }
@@ -2449,9 +2567,9 @@ namespace ACardGameLibrary
                         EffectPhase = CardEffectPhase.OnRemove,
                         Effect = (game, owner) =>
                         {
-                            game.RemoveListener("OverwhelmCreature", owner);
-                            game.RemoveListener("OverwhelmSupport", owner);
-                            game.RemoveListener("OverwhelmEnd", owner);
+                            game.RemoveFirstListener("OverwhelmCreature", owner);
+                            game.RemoveFirstListener("OverwhelmSupport", owner);
+                            game.RemoveFirstListener("OverwhelmEnd", owner);
                         }
                     },
                 }
@@ -2497,7 +2615,7 @@ namespace ACardGameLibrary
                                         game.AddPublicLog($"{creature.Name} was exiled and {owner.Name} gained Sauron");
                                     }
 
-                                    game.RemoveListener("Ring of power", owner);
+                                    game.RemoveFirstListener("Ring of power", owner);
                                 }
                             });
                         }
@@ -2507,7 +2625,7 @@ namespace ACardGameLibrary
                         EffectPhase = CardEffectPhase.OnRemove,
                         Effect = (game, owner) =>
                         {
-                            game.RemoveListener("Ring of power", owner);
+                            game.RemoveFirstListener("Ring of power", owner);
                         }
                     }
                 }
@@ -2653,8 +2771,8 @@ namespace ACardGameLibrary
                         EffectPhase = CardEffectPhase.OnRemove,
                         Effect = (game, owner) =>
                         {
-                            game.RemoveListener("WisdomLegendary", owner);
-                            game.RemoveListener("WisdomBuff", owner);
+                            game.RemoveFirstListener("WisdomLegendary", owner);
+                            game.RemoveFirstListener("WisdomBuff", owner);
                         }
                     }
                 }
@@ -2721,11 +2839,11 @@ namespace ACardGameLibrary
             new Card
             {
                 Name = "Market",
-                Text = "Look at the top five cards of a shop pile. You may put any of them on the bottom. Refresh your shop.",
+                Text = "Look at the top four cards of a shop pile. You may put any of them on the bottom. Refresh your shop.",
                 IsInShopPool = true,
                 Cost = 2,
                 AmountInShopPool = 2,
-                MaxTargets = 5,
+                MaxTargets = 4,
                 Types = new List<CardType>
                 {
                     CardType.Action
@@ -2767,12 +2885,12 @@ namespace ACardGameLibrary
                             game.ActivateSelectorFlag = true;
                             game.CardsToChooseFromSelector = game.ShopPool
                                 .Where(e => e.Cost == cost)
-                                .Take(5)
+                                .Take(4)
                                 .ToList();
 
                             game.CardBeingPlayedIsTargeting();
 
-                            game.AddPublicLog($"{owner.Name} looked at the top 5 cards of the {cost}-cost shop pile");
+                            game.AddPublicLog($"{owner.Name} looked at the top 4 cards of the {cost}-cost shop pile");
 
                             game.MessageToPlayer = new MessageToPlayerParams
                             {
@@ -2847,6 +2965,7 @@ namespace ACardGameLibrary
                     CardType.Action,
                     CardType.Support
                 },
+                AdditionalPlayConditions = (game) => game.ActivePlayer.DiscardPile.Count > 0,
                 Effects = new List<CardEffect>
                 {
                     new CardEffect
@@ -2873,6 +2992,34 @@ namespace ACardGameLibrary
                             game.AddPublicLog($"{owner.Name} put {target.Name} from their discard pile into their hand");
                             owner.DiscardPile.Remove(target);
                             owner.Hand.Add(target);
+                        }
+                    }
+                }
+            },
+
+            new Card
+            {
+                Name = "Sacrifice",
+                Text = "Deal 2 damage to your opponent. You lose 4 life.",
+                IsInShopPool = true,
+                Cost = 3,
+                AmountInShopPool = 2,
+                Types = new List<CardType>
+                {
+                    CardType.Action
+                },
+                Effects = new List<CardEffect>
+                {
+                    new CardEffect
+                    {
+                        EffectPhase = CardEffectPhase.OnPlay,
+                        Effect = (game, owner) =>
+                        {
+                            game.DealDamage(2);
+                            game.AddPublicLog($"Sacrifice dealt {game.DamageBeingDealt} damage");
+
+                            owner.Life -= 4;
+                            game.AddPublicLog($"{owner.Name} took 4 damage");
                         }
                     }
                 }
@@ -2988,9 +3135,9 @@ namespace ACardGameLibrary
                                 {
                                     owner.Shop.ForEach(e => e.Cost++);
 
-                                    game.RemoveListener("MerchantRefreshing", owner);
-                                    game.RemoveListener("MerchantRefreshed", owner);
-                                    game.RemoveListener("MerchantEnd", owner);
+                                    game.RemoveFirstListener("MerchantRefreshing", owner);
+                                    game.RemoveFirstListener("MerchantRefreshed", owner);
+                                    game.RemoveFirstListener("MerchantEnd", owner);
                                 }
                             });
                         }
@@ -3001,7 +3148,7 @@ namespace ACardGameLibrary
             new Card
             {
                 Name = "Breakthrough",
-                Text = "Choose a cost. Your shop is of that level for the rest of this turn. Refresh it. Exile this card.",
+                Text = "Choose a cost. Your shop is of that level for the rest of this turn. Exile this card.",
                 IsInShopPool = true,
                 Cost = 4,
                 AmountInShopPool = 2,
@@ -3039,7 +3186,7 @@ namespace ACardGameLibrary
                                 {
                                     owner.ShopLevel = currentShopLevel;
                                     owner.ShopRefreshCost = currentShopRefreshCost;
-                                    game.RemoveListener("BreakthroughEnd");
+                                    game.RemoveFirstListener("BreakthroughEnd");
                                 }
                             });
 
@@ -3052,7 +3199,7 @@ namespace ACardGameLibrary
                                 Effect = (game, owner) =>
                                 {
                                     owner.CardsPlayedThisTurn.RemoveAll(e => e.Name == "Breakthrough");
-                                    game.RemoveListener("BreakthroughExile");
+                                    game.RemoveFirstListener("BreakthroughExile");
                                 }
                             });
                         }
@@ -3067,8 +3214,6 @@ namespace ACardGameLibrary
 
                             owner.ShopLevel = cost;
                             owner.ShopRefreshCost = cost;
-
-                            game.RefreshShop(owner);
 
                             game.AddPublicLog($"{owner.Name} used Breakthrough to upgrade their shop to level {cost}");
                         },
@@ -3200,6 +3345,63 @@ namespace ACardGameLibrary
 
             new Card
             {
+                Name = "Reform",
+                Text = "Exile a card from your hand. Draw three cards.",
+                IsInShopPool = true,
+                Cost = 5,
+                AmountInShopPool = 2,
+                TargetsHand = true,
+                MinTargets = 1,
+                MaxTargets = 1,
+                Types = new List<CardType>
+                {
+                    CardType.Action
+                },
+                ValidTargetTypes = new List<CardType>
+                {
+                    CardType.Creature,
+                    CardType.Currency,
+                    CardType.Support,
+                    CardType.Action,
+                    CardType.Leader
+                },
+                AdditionalPlayConditions = (game) => game.ActivePlayer.Hand.Count > 1,
+                Effects = new List<CardEffect>
+                {
+                    new CardEffect
+                    {
+                        EffectPhase = CardEffectPhase.OnPlay,
+                        Effect = (game, owner) =>
+                        {
+                            game.CardBeingPlayedIsTargeting();
+
+                            game.MessageToPlayer = new MessageToPlayerParams
+                            {
+                                Message = "Exile a card from your hand",
+                                Severity = MessageSeverity.Information
+                            };
+                        }
+                    },
+                    new CardEffect
+                    {
+                        EffectPhase = CardEffectPhase.OnAcceptedAfterPlay,
+                        ResolveOrder = 0,
+                        Effect = (game, owner) =>
+                        {
+                            var target = game.TargetedCards.Single();
+
+                            owner.Hand.Remove(target);
+                            game.AddPublicLog($"{owner.Name} exiled {target.Name}");
+
+                            game.TriggerEvent(GameEvent.DrawingCardsFromCardEffect);
+                            owner.DrawCards(3);
+                        }
+                    }
+                }
+            },
+
+            new Card
+            {
                 Name = "Upgrade",
                 Text = "Exile a non-currency card from your hand. Gain a card from your shop.",
                 IsInShopPool = true,
@@ -3304,6 +3506,7 @@ namespace ACardGameLibrary
                     CardType.Action,
                     CardType.Leader
                 },
+                AdditionalPlayConditions = (game) => game.ActivePlayer.Hand.Count > 2,
                 Effects = new List<CardEffect>
                 {
                     new CardEffect

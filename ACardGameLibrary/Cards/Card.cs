@@ -28,6 +28,7 @@
         public bool MustTargetFriend { get; set; }
         public List<CardType> ValidTargetTypes { get; set; }
         public Func<GameStateManager, Card, bool> AdditionalTargetConditions { get; set; }
+        public Func<GameStateManager, bool> AdditionalPlayConditions { get; set; }
 
         public bool IsBeingPlayed { get; set; }
         public bool IsBeingMovedToDiscard { get; set; }
