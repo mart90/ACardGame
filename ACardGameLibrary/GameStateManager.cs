@@ -127,12 +127,7 @@
 
         public bool CanBuyCard(Card card)
         {
-            if (ActivePlayer.MoneyToSpend < card.Cost || card.Cost > ActivePlayer.ShopLevel)
-            {
-                return false;
-            }
-
-            return true;
+            return ActivePlayer.MoneyToSpend >= card.Cost;
         }
 
         public void PlayCard(Card card)
@@ -257,7 +252,7 @@
             var card = TargetedCards.Single();
             card.IsTargeted = false;
 
-            if (CanBuyCard(card))
+            if (CanBuyCard(card) && ActivePlayer.ShopLevel >= card.Cost)
             {
                 AddPublicLog($"{ActivePlayer.Name} is using Free trade to buy from a shop discard pile");
 
