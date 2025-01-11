@@ -1,5 +1,6 @@
 ﻿using ACardGameLibrary;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,6 +11,8 @@ namespace ACardGame.UI
         public List<Card> Cards { get; set; }
 
         public List<CardContainer> Containers => ChildrenOfType<CardContainer>().ToList();
+
+        public TextArea Title { get; set; }
 
         private readonly UiElement _goToTop;
         private readonly UiElement _goToBottom;
@@ -25,6 +28,15 @@ namespace ACardGame.UI
             Texture = AssetManager.LoadTexture("UI/card_stack_viewer");
             GoDown();
             IsVisible = false;
+
+            SetCursor(3, 1);
+            Title = new TextArea(assetManager, "buttonFont", 77, true, 5)
+            {
+                IsVisible = false,
+                ForceOneLine = true,
+                TextColor = Color.White,
+            };
+            AddChild(Title);
 
             SetCursor(40, 1.5);
             _goToTop = new UiElement(assetManager.LoadTexture("UI/go_top"), 20, true)
@@ -43,8 +55,18 @@ namespace ACardGame.UI
             SetContainers();
         }
 
-        public void Show(List<Card> cards)
+        public void Show(List<Card> cards, string title = null)
         {
+            if (title != null)
+            {
+                Title.Text = title;
+                Title.IsVisible = true;
+            }
+            else
+            {
+                Title.IsVisible = false;
+            }
+
             Containers.ForEach(e => e.Clear());
 
             IsVisible = true;

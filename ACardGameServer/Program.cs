@@ -5,6 +5,7 @@
     {
         static void Main(string[] args)
         {
+            Directory.CreateDirectory($"{AppDomain.CurrentDomain.BaseDirectory}/log");
             new ServerMain().Start();
         }
     }

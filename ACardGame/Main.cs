@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace ACardGame
 {
-    public class Main : Game
+    public class Main : Microsoft.Xna.Framework.Game
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
@@ -29,7 +29,7 @@ namespace ACardGame
         public static int ScreenWidth;
         public static int ScreenHeight;
 
-        public const string GameVersion = "0.1";
+        public const string GameVersion = "0.2.0";
         public const bool DebugLogEnabled = true;
 
         public Main()
@@ -45,13 +45,13 @@ namespace ACardGame
 
         protected override void Initialize()
         {
-            //ScreenWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width;
-            //ScreenHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height;
-            //_graphics.IsFullScreen = true;
+            ScreenWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width;
+            ScreenHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height;
+            _graphics.IsFullScreen = true;
 
-            ScreenWidth = 1920;
-            ScreenHeight = 1080;
-            _graphics.IsFullScreen = false;
+            //ScreenWidth = 1920;
+            //ScreenHeight = 1080;
+            //_graphics.IsFullScreen = false;
 
             _graphics.PreferredBackBufferWidth = ScreenWidth;
             _graphics.PreferredBackBufferHeight = ScreenHeight;

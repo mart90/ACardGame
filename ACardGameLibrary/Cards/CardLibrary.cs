@@ -1007,9 +1007,10 @@ namespace ACardGameLibrary
 
             new CreatureCard
             {
-                Name = "Militia",
-                Power = 0,
-                Defense = 4,
+                Name = "Squire",
+                Text = "When you play this, you may target a creature. It gets +1/+1.",
+                Power = 1,
+                Defense = 2,
                 IsInShopPool = true,
                 Cost = 2,
                 AmountInShopPool = 2,
@@ -1017,6 +1018,44 @@ namespace ACardGameLibrary
                 {
                     CardType.Creature,
                     CardType.Infantry
+                },
+                ValidTargetTypes = new List<CardType>
+                {
+                    CardType.Creature
+                },
+                Effects = new List<CardEffect>
+                {
+                    new CardEffect
+                    {
+                        EffectPhase = CardEffectPhase.OnPlay,
+                        Effect = (game, owner) =>
+                        {
+                            game.CardBeingPlayedIsTargeting();
+
+                            game.MessageToPlayer = new MessageToPlayerParams
+                            {
+                                Message = "You may target a creature",
+                                Severity = MessageSeverity.Information
+                            };
+                        }
+                    },
+                    new CardEffect
+                    {
+                        EffectPhase = CardEffectPhase.OnAcceptedAfterPlay,
+                        Effect = (game, owner) =>
+                        {
+                            var target = game.TargetedCards.SingleOrDefault();
+
+                            if (target != null)
+                            {
+                                ((CreatureCard)target).TemporaryAddedPower++;
+                                ((CreatureCard)target).TemporaryAddedDefense++;
+                                game.AddPublicLog($"{owner.Name} gave {target.Name} +1/+1");
+                            }
+
+                            game.SwitchActivePlayer();
+                        }
+                    }
                 }
             },
 

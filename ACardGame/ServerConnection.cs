@@ -1,4 +1,4 @@
-﻿using ACardGameServer;
+﻿using ACardGameLibrary;
 using LiteNetLib;
 using LiteNetLib.Utils;
 using Newtonsoft.Json;
@@ -47,10 +47,11 @@ namespace ACardGame
 
         public ServerResponse Login(string username, string password)
         {
-            LoginMessage message = new()
+            AuthenticateMessage message = new()
             {
                 Username = username,
-                PasswordHash = HashPassword(password)
+                PasswordHash = HashPassword(password),
+                GameVersion = Main.GameVersion
             };
 
             var response = SendMessageAwaitResponse(ServerEndpoint.Login, message);
@@ -70,10 +71,11 @@ namespace ACardGame
 
         public ServerResponse Register(string username, string password)
         {
-            RegisterMessage message = new()
+            AuthenticateMessage message = new()
             {
                 Username = username,
-                PasswordHash = HashPassword(password)
+                PasswordHash = HashPassword(password),
+                GameVersion = Main.GameVersion
             };
 
             var response = SendMessageAwaitResponse(ServerEndpoint.Register, message);
@@ -128,7 +130,7 @@ namespace ACardGame
             Request message = new(endpoint, obj);
 
             NetDataWriter writer = new();
-            writer.Put(message.ToJsonString());
+            writer.Put(message.ToString());
 
             _client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
 
@@ -151,7 +153,7 @@ namespace ACardGame
             Request message = new(endpoint, obj);
 
             NetDataWriter writer = new();
-            writer.Put(message.ToJsonString());
+            writer.Put(message.ToString());
 
             _client.SendToAll(writer, DeliveryMethod.ReliableOrdered);
         }

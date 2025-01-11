@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace ACardGameServer
+namespace ACardGameLibrary
 {
     public class Request
     {
@@ -8,7 +8,7 @@ namespace ACardGameServer
 
         public string Data { get; set; }
 
-        public string ToJsonString()
+        public override string ToString()
         {
             return JsonConvert.SerializeObject(this);
         }
@@ -27,15 +27,10 @@ namespace ACardGameServer
         }
     }
 
-    public class LoginMessage
+    public class AuthenticateMessage
     {
         public string Username { get; set; }
         public string PasswordHash { get; set; }
-    }
-
-    public class RegisterMessage
-    {
-        public string Username { get; set; }
-        public string PasswordHash { get; set; }
+        public string GameVersion { get; set; }
     }
 }

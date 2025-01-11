@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 
-namespace ACardGameServer
+namespace ACardGameLibrary
 {
     public class GameMove
     {

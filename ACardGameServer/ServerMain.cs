@@ -1,4 +1,5 @@
-﻿using LiteNetLib;
+﻿using ACardGameLibrary;
+using LiteNetLib;
 using LiteNetLib.Utils;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -45,7 +46,6 @@ namespace ACardGameServer
 
             listener.PeerConnectedEvent += peer =>
             {
-                Console.WriteLine($"Connection from {peer}");
                 _clients.Add(new Client(peer));
             };
 
@@ -56,8 +56,18 @@ namespace ACardGameServer
 
             listener.NetworkReceiveEvent += (fromPeer, dataReader, channel, deliveryMethod) =>
             {
-                var str = dataReader.GetString();
-                var serverMessage = JsonConvert.DeserializeObject<Request>(str);
+                string str = null;
+                Request? serverMessage = null;
+
+                try
+                {
+                    str = dataReader.GetString();
+                    serverMessage = JsonConvert.DeserializeObject<Request>(str);
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError($"Couldn't parse request:\n{str}\nException:\n{e}");
+                }
 
                 Receive(serverMessage, fromPeer);
 
@@ -75,34 +85,53 @@ namespace ACardGameServer
         {
             var client = _clients.Where(e => e.NetPeer == fromPeer).FirstOrDefault();
 
-            if (client == null)
+            try
             {
-                Console.WriteLine($"Received message from unregistered client: {fromPeer.Address}");
-            }
-
-            if (client.AuthenticatedUser == null)
-            {
-                if (message.Endpoint == ServerEndpoint.Login)
+                if (client == null)
                 {
-                    Login(client, message.DeserializeJson<LoginMessage>());
-                }
-                else if (message.Endpoint == ServerEndpoint.Register)
-                {
-                    RegisterUser(client, message.DeserializeJson<RegisterMessage>());
+                    Logger.LogDebug($"Received message from unregistered client: {fromPeer.Address}");
                 }
 
-                return;
+                if (client.AuthenticatedUser == null)
+                {
+                    var authenticateMessage = message.DeserializeJson<AuthenticateMessage>();
+
+                    var serverVersion = _dataContext.LatestVersion.Single().VersionString;
+                    if (authenticateMessage.GameVersion != serverVersion)
+                    {
+                        SendResponse(client, StatusCode.Error, "Version mismatch");
+                        return;
+                    }
+
+                    if (message.Endpoint == ServerEndpoint.Login)
+                    {
+                        Login(client, authenticateMessage);
+                    }
+                    else if (message.Endpoint == ServerEndpoint.Register)
+                    {
+                        RegisterUser(client, authenticateMessage);
+                    }
+
+                    return;
+                }
+
+                switch (message.Endpoint)
+                {
+                    case ServerEndpoint.CreateChallenge: CreateChallenge(client); break;
+                    case ServerEndpoint.CancelChallenge: CancelChallenge(client); break;
+                    case ServerEndpoint.JoinFromClipboard: JoinChallengeById(client, message.DeserializeJson<string>()); break;
+                    case ServerEndpoint.JoinNearestOpen: JoinNearestOpenChallenge(client); break;
+
+                    case ServerEndpoint.MakeMove: MakeMove(client, message.DeserializeJson<GameMove>()); break;
+                    case ServerEndpoint.SetResult: SetResult(client); break;
+
+                    default: SendResponse(client, StatusCode.Error, "Unknown endpoint"); break;
+                }
             }
-
-            switch (message.Endpoint)
+            catch (Exception e)
             {
-                case ServerEndpoint.CreateChallenge: CreateChallenge(client); break;
-                case ServerEndpoint.CancelChallenge: CancelChallenge(client); break;
-                case ServerEndpoint.JoinFromClipboard: JoinChallengeById(client, message.DeserializeJson<string>()); break;
-                case ServerEndpoint.JoinNearestOpen: JoinNearestOpenChallenge(client); break;
-
-                case ServerEndpoint.MakeMove: MakeMove(client, message.DeserializeJson<GameMove>()); break;
-                case ServerEndpoint.SetResult: SetResult(client); break;
+                Logger.LogError($"Error handling request from client logged in as {client.AuthenticatedUser?.Name}. Request:\n{message}\nException:{e}");
+                SendResponse(client, StatusCode.Error, "Server error");
             }
         }
 
@@ -157,7 +186,7 @@ namespace ACardGameServer
             }
             else if (opponent == client)
             {
-                SendResponse(client, StatusCode.Error, "Can't join own challenge");
+                SendResponse(client, StatusCode.Error, "Can't join your own challenge");
                 return;
             }
 
@@ -225,34 +254,35 @@ namespace ACardGameServer
             opponent.InGame = game;
         }
 
-        public void RegisterUser(Client client, RegisterMessage registerMessage)
+        public void RegisterUser(Client client, AuthenticateMessage registerMessage)
         {
-            client.AuthenticatedUser = new User
+            var user = new User
             {
                 Name = registerMessage.Username,
                 PasswordHash = registerMessage.PasswordHash
             };
 
-            _dataContext.Add(client.AuthenticatedUser);
-
+            _dataContext.Add(user);
             try
             {
                 _dataContext.SaveChanges();
 
                 SendResponse(client, StatusCode.Ok, new UserAuthenticatedResponse
                 {
-                    UserId = client.AuthenticatedUser.Id,
-                    UserName = client.AuthenticatedUser.Name
+                    UserId = user.Id,
+                    UserName = user.Name
                 });
+
+                client.AuthenticatedUser = user;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                _dataContext.Remove(client.AuthenticatedUser);
+                _dataContext.Remove(user);
                 SendResponse(client, StatusCode.Error, "Error creating user. Username might be taken");
             }
         }
 
-        public void Login(Client client, LoginMessage loginMessage)
+        public void Login(Client client, AuthenticateMessage loginMessage)
         {
             client.AuthenticatedUser = _dataContext.Users
                 .Where(e => e.Name == loginMessage.Username && e.PasswordHash == loginMessage.PasswordHash)

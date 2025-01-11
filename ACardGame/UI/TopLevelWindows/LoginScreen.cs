@@ -1,4 +1,4 @@
-﻿using ACardGameServer;
+﻿using ACardGameLibrary;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Newtonsoft.Json;
@@ -65,6 +65,13 @@ namespace ACardGame.UI
             AddChild(new Button(AssetManager, ButtonType.Long, 10, true, "Register", delegate
             {
                 Register();
+            }));
+
+            AddSpacing(2);
+
+            AddChild(new Button(AssetManager, ButtonType.Long, 10, true, "Back", delegate
+            {
+                NewUiState = UiState.MainMenu;
             }));
 
             AddSpacing(2);

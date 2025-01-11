@@ -124,6 +124,11 @@
                 return false;
             }
 
+            if (card.Name == "Recall" && player.DiscardPile.Count == 0)
+            {
+                return false;
+            }
+
             return true;
         }
 

@@ -1,10 +1,8 @@
 ﻿using ACardGameLibrary;
-using ACardGameServer;
 using Microsoft.Xna.Framework;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace ACardGame.UI
@@ -17,9 +15,13 @@ namespace ACardGame.UI
 
         private readonly ServerConnection _server;
 
+        public Button ShowCardsPlayedThisTurnEnemyButton { get; set; }
+
         public override Player Player => GameState.Players.Single(e => e.Name ==  AuthenticatedUser.Name);
         public override Player Enemy => GameState.Players.Single(e => e.Name != AuthenticatedUser.Name);
         public override bool IsMyTurn => Player.IsActive;
+
+        private bool IsViewingOpponentCardsPlayedThisTurn;
 
         public Button ResignButton { get; set; }
 
@@ -39,8 +41,27 @@ namespace ACardGame.UI
 
             SetCursor(89, 25);
             ResignButton = new Button(AssetManager, ButtonType.Long, 10, true, "Resign", Resign);
-
             AddChild(ResignButton);
+
+            // View cards played this turn enemy
+            SetCursor(81.5, 20.2);
+            ShowCardsPlayedThisTurnEnemyButton = new Button(AssetManager, ButtonType.Short, 1.7, true, "...", delegate
+            {
+                CardStackViewer.Show(Enemy.CardsPlayedThisTurn, "Opponent played:");
+                IsViewingOpponentCardsPlayedThisTurn = true;
+            });
+            AddChild(ShowCardsPlayedThisTurnEnemyButton);
+
+            if (!Player.IsActive)
+            {
+                ShowCardsPlayedThisTurnEnemyButton.IsVisible = true;
+                IsViewingOpponentCardsPlayedThisTurn = true;
+                CardStackViewer.Show([], "Opponent played:");
+            }
+            else
+            {
+                ShowCardsPlayedThisTurnEnemyButton.IsVisible = false;
+            }
         }
 
         public override void Update()
@@ -70,7 +91,8 @@ namespace ACardGame.UI
             {
                 if (_server.IncomingMessage.MessageType == ServerMessageType.MakeMove)
                 {
-                    ResolveGameMove(JsonConvert.DeserializeObject<GameMove>(_server.IncomingMessage.Data));
+                    var gameMove = JsonConvert.DeserializeObject<GameMove>(_server.IncomingMessage.Data);
+                    ResolveGameMove(gameMove);
                 }
 
                 _server.IncomingMessage = null;
@@ -128,6 +150,7 @@ namespace ACardGame.UI
                 if (move.Type == MoveType.EndingTurn)
                 {
                     GameState.SwitchTurn();
+                    ShowCardsPlayedThisTurnEnemyButton.IsVisible = false;
                     AssetManager.PlaySoundEffect("game_start");
                 }
                 else if (move.Type == MoveType.Passing)
@@ -184,6 +207,18 @@ namespace ACardGame.UI
                     GameState.Winner = Player;
                 }
 
+                if (move.Type != MoveType.EndingTurn && move.Type != MoveType.Passing)
+                {
+                    if (LogViewer.IsVisible)
+                    {
+                        LogViewer.Refresh(GameState.PublicLog);
+                    }
+                    else if (IsViewingOpponentCardsPlayedThisTurn)
+                    {
+                        CardStackViewer.Show(Enemy.CardsPlayedThisTurn, "Opponent played:");
+                    }
+                }
+
                 if (GameState.IsInCombat)
                 {
                     Battlefield.Refresh(GameState, Player);
@@ -206,6 +241,10 @@ namespace ACardGame.UI
             {
                 AssetManager.PlaySoundEffect("combat", 0.2f);
                 combatSoundPlayed = true;
+
+                CardStackViewer.IsVisible = false;
+                IsViewingOpponentCardsPlayedThisTurn = false;
+                LogViewer.IsVisible = false;
 
                 ToggleShopVisible();
                 ToggleShopButton.IsVisible = true;
@@ -282,6 +321,7 @@ namespace ACardGame.UI
         {
             if (IsMyTurn)
             {
+                IsViewingOpponentCardsPlayedThisTurn = false;
                 base.LeftClick(position);
             }
             else
@@ -299,6 +339,7 @@ namespace ACardGame.UI
                 if (CardStackViewer.IsVisible)
                 {
                     CardStackViewer.IsVisible = false;
+                    IsViewingOpponentCardsPlayedThisTurn = false;
                 }
 
                 var child = GetChildByPosition(position);
@@ -320,7 +361,8 @@ namespace ACardGame.UI
                     EnemyDiscardPile,
                     ToggleShopButton,
                     ShowCardsPlayedThisTurnButton,
-                    BackToMenuButton
+                    BackToMenuButton,
+                    ShowCardsPlayedThisTurnEnemyButton
                 };
 
                 enabledChildren.AddRange(ViewShopDiscardButtons);
@@ -403,6 +445,10 @@ namespace ACardGame.UI
                 };
 
                 GameState.SwitchTurn();
+
+                ShowCardsPlayedThisTurnEnemyButton.IsVisible = true;
+                IsViewingOpponentCardsPlayedThisTurn = true;
+                CardStackViewer.Show([], "Opponent played:");
             }
 
             SendMakeMoveMessage();

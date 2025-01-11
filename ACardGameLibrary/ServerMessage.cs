@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace ACardGameServer
+namespace ACardGameLibrary
 {
     public class ServerMessage
     {

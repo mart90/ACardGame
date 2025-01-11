@@ -40,6 +40,21 @@ namespace ACardGame.UI
             SetText();
         }
 
+        public void Refresh(List<GameLog> logs)
+        {
+            var diff = logs.Count - Logs.Count;
+
+            Logs = new List<GameLog>(logs);
+            Logs.Reverse();
+
+            if (_firstLogIndex != 0)
+            {
+                _firstLogIndex += diff;
+            }
+
+            SetText();
+        }
+
         public override void ScrollUp(Point position)
         {
             _firstLogIndex -= 3;

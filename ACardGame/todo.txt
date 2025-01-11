@@ -1,5 +1,7 @@
+Logs update as they play
+Visual history (update as they play)
+Buying from broken through shop in later turns
 Restore game
-Server logging
 Leaderboard
 Making sure opponent still here
 Reconnecting

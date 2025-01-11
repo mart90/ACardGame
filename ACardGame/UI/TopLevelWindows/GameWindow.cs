@@ -45,6 +45,7 @@ namespace ACardGame.UI
         public Button UpgradeShopButton { get; set; }
         public Button BuySilverButton { get; set; }
         public Button BuyGoldButton { get; set; }
+
         public Button ShowCardsPlayedThisTurnButton { get; set; }
 
         public TextArea ShopPilesText { get; set; }
@@ -397,7 +398,7 @@ namespace ACardGame.UI
             OptionPicker = new OptionPicker(AssetManager, 10, false);
             AddChild(OptionPicker);
 
-            // View cards played this turn button
+            // View cards played this turn
             SetCursor(81.2, 75.2);
             ShowCardsPlayedThisTurnButton = new Button(AssetManager, ButtonType.Short, 1.7, true, "...", delegate
             {
@@ -864,7 +865,7 @@ namespace ACardGame.UI
 
         public override void Update()
         {
-            if (Player.Deck.Any())
+            if (Player.Deck.Count != 0)
             {
                 ActivePlayerDeck.IsVisible = true;
                 ActivePlayerDeck.Text = Player.Deck.Count.ToString();
@@ -885,7 +886,7 @@ namespace ACardGame.UI
                 ActivePlayerLeader.Clear();
             }
 
-            if (Player.DiscardPile.Any())
+            if (Player.DiscardPile.Count != 0)
             {
                 ActivePlayerDiscardPile.IsVisible = true;
                 ActivePlayerDiscardPile.SetCard(Player.DiscardPile.Last());
@@ -897,7 +898,7 @@ namespace ACardGame.UI
             }
 
 
-            if (Enemy.Hand.Any())
+            if (Enemy.Hand.Count != 0)
             {
                 EnemyHand.IsVisible = true;
                 EnemyHand.Text = Enemy.Hand.Count.ToString();
@@ -907,7 +908,7 @@ namespace ACardGame.UI
                 EnemyHand.IsVisible = false;
             }
 
-            if (Enemy.Deck.Any())
+            if (Enemy.Deck.Count != 0)
             {
                 EnemyDeck.IsVisible = true;
                 EnemyDeck.Text = Enemy.Deck.Count.ToString();
@@ -928,7 +929,7 @@ namespace ACardGame.UI
                 EnemyLeader.Clear();
             }
 
-            if (Enemy.DiscardPile.Any())
+            if (Enemy.DiscardPile.Count != 0)
             {
                 EnemyDiscardPile.IsVisible = true;
                 EnemyDiscardPile.SetCard(Enemy.DiscardPile.Last());
