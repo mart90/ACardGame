@@ -240,6 +240,7 @@ namespace ACardGameServer
             {
                 GameId = game.Id,
                 OpponentName = opponent.AuthenticatedUser.Name,
+                OpponentRating = opponent.AuthenticatedUser.Rating,
                 ShuffleSeed = seed,
                 IPlayFirst = seed % 2 == 0
             });
@@ -248,6 +249,7 @@ namespace ACardGameServer
             {
                 GameId = game.Id,
                 OpponentName = client.AuthenticatedUser.Name,
+                OpponentRating = client.AuthenticatedUser.Rating,
                 ShuffleSeed = seed,
                 IPlayFirst = seed % 2 != 0
             });
@@ -272,7 +274,8 @@ namespace ACardGameServer
                 SendResponse(client, StatusCode.Ok, new UserAuthenticatedResponse
                 {
                     UserId = user.Id,
-                    UserName = user.Name
+                    UserName = user.Name,
+                    Rating = user.Rating
                 });
 
                 client.AuthenticatedUser = user;
@@ -295,7 +298,8 @@ namespace ACardGameServer
                 SendResponse(client, StatusCode.Ok, new UserAuthenticatedResponse
                 {
                     UserId = client.AuthenticatedUser.Id,
-                    UserName = client.AuthenticatedUser.Name
+                    UserName = client.AuthenticatedUser.Name,
+                    Rating = client.AuthenticatedUser.Rating
                 });
             }
             else

@@ -119,31 +119,31 @@ namespace ACardGame.UI
             return Children.OfType<T>();
         }
 
-        public void GoRight()
+        public void GoRight(bool moveCursor = true)
         {
-            NewDirection(Direction.Right);
+            NewDirection(Direction.Right, moveCursor);
         }
 
-        public void GoDown()
+        public void GoDown(bool moveCursor = true)
         {
-            NewDirection(Direction.Down);
+            NewDirection(Direction.Down, moveCursor);
         }
 
-        public void GoLeft()
+        public void GoLeft(bool moveCursor = true)
         {
-            NewDirection(Direction.Left);
+            NewDirection(Direction.Left, moveCursor);
         }
 
-        public void GoUp()
+        public void GoUp(bool moveCursor = true)
         {
-            NewDirection(Direction.Up);
+            NewDirection(Direction.Up, moveCursor);
         }
 
-        public void NewDirection(Direction direction)
+        public void NewDirection(Direction direction, bool moveCursor = true)
         {
             Direction = direction;
 
-            if (Children.Any())
+            if (Children.Count != 0 && moveCursor)
             {
                 SetCursor();
             }

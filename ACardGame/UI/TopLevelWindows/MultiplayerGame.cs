@@ -16,6 +16,8 @@ namespace ACardGame.UI
         private readonly ServerConnection _server;
 
         public Button ShowCardsPlayedThisTurnEnemyButton { get; set; }
+        public TextArea PlayerRating { get; set; }
+        public TextArea EnemyRating { get; set; }
 
         public override Player Player => GameState.Players.Single(e => e.Name ==  AuthenticatedUser.Name);
         public override Player Enemy => GameState.Players.Single(e => e.Name != AuthenticatedUser.Name);
@@ -42,6 +44,16 @@ namespace ACardGame.UI
             SetCursor(89, 25);
             ResignButton = new Button(AssetManager, ButtonType.Long, 10, true, "Resign", Resign);
             AddChild(ResignButton);
+
+            // Player rating
+            SetCursor(72.5, 51.2);
+            PlayerRating = new TextArea(AssetManager, "playerRatingFont", 15, true, 10);
+            AddChild(PlayerRating);
+
+            // Enemy rating
+            SetCursor(72.5, 27.2);
+            EnemyRating = new TextArea(AssetManager, "playerRatingFont", 15, true, 10);
+            AddChild(EnemyRating);
 
             // View cards played this turn enemy
             SetCursor(81.5, 20.2);
@@ -410,6 +422,11 @@ namespace ACardGame.UI
 
         protected override void BuyCard(Card card)
         {
+            if (CheckRequireAccept())
+            {
+                return;
+            }
+
             _makeMoveMessage = new GameMove
             {
                 GameId = Id,
@@ -456,6 +473,11 @@ namespace ACardGame.UI
 
         protected override void UpgradeShop()
         {
+            if (CheckRequireAccept())
+            {
+                return;
+            }
+
             _makeMoveMessage = new GameMove
             {
                 GameId = Id,
@@ -469,6 +491,11 @@ namespace ACardGame.UI
 
         protected override void Worship()
         {
+            if (CheckRequireAccept())
+            {
+                return;
+            }
+
             _makeMoveMessage = new GameMove
             {
                 GameId = Id,
@@ -482,6 +509,11 @@ namespace ACardGame.UI
 
         protected override void BuyGold()
         {
+            if (CheckRequireAccept())
+            {
+                return;
+            }
+
             _makeMoveMessage = new GameMove
             {
                 GameId = Id,
@@ -495,6 +527,11 @@ namespace ACardGame.UI
 
         protected override void BuySilver()
         {
+            if (CheckRequireAccept())
+            {
+                return;
+            }
+
             _makeMoveMessage = new GameMove
             {
                 GameId = Id,
@@ -508,6 +545,11 @@ namespace ACardGame.UI
 
         protected override void ActionRefreshShop()
         {
+            if (CheckRequireAccept())
+            {
+                return;
+            }
+
             _makeMoveMessage = new GameMove
             {
                 GameId = Id,
@@ -521,6 +563,11 @@ namespace ACardGame.UI
 
         private void Resign()
         {
+            if (CheckRequireAccept())
+            {
+                return;
+            }
+
             GameState.Winner = Enemy;
 
             ResignButton.IsVisible = false;
@@ -537,6 +584,11 @@ namespace ACardGame.UI
 
         protected override void TryFreeTradeBuy()
         {
+            if (CheckRequireAccept())
+            {
+                return;
+            }
+
             var boughtCard = GameState.TryBuyCardFromDiscardPile();
 
             if (boughtCard != null)
@@ -556,6 +608,24 @@ namespace ACardGame.UI
 
                 SendMakeMoveMessage();
             }
+        }
+
+        private bool CheckRequireAccept()
+        {
+            if (!GameState.RequireAccept)
+            {
+                return false;
+            }
+
+            SetMessageToPlayer(new MessageToPlayerParams
+            {
+                Message = "Finish the play first",
+                Severity = MessageSeverity.Error
+            });
+
+            AssetManager.PlaySoundEffect("error", .6f);
+
+            return true;
         }
 
         protected override void ResolveAccepted(bool skipValidityChecks = false)

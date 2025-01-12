@@ -1,5 +1,6 @@
 ﻿using ACardGameLibrary;
 using Newtonsoft.Json;
+using System;
 using TextCopy;
 
 namespace ACardGame.UI
@@ -141,6 +142,11 @@ namespace ACardGame.UI
                     CreatedGame.Update();
 
                     NewUiState = UiState.MultiplayerGame;
+
+                    CreatedGame.PlayerRating.Text = Math.Round(AuthenticatedUser.Rating).ToString();
+                    CreatedGame.EnemyRating.Text = Math.Round(gameStartMessage.OpponentRating).ToString();
+
+                    AssetManager.PlaySoundEffect("game_start");
                 }
 
                 _server.IncomingMessage = null;

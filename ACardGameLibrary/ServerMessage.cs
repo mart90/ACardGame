@@ -17,6 +17,7 @@ namespace ACardGameLibrary
     {
         public int GameId { get; set; }
         public string OpponentName { get; set; }
+        public double OpponentRating { get; set; }
         public int ShuffleSeed { get; set; }
         public bool IPlayFirst { get; set; }
     }

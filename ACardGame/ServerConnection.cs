@@ -62,7 +62,8 @@ namespace ACardGame
                 AuthenticatedUser = new User
                 {
                     Id = authenticatedUser.UserId,
-                    Name = authenticatedUser.UserName
+                    Name = authenticatedUser.UserName,
+                    Rating = authenticatedUser.Rating
                 };
             }
 
@@ -86,7 +87,8 @@ namespace ACardGame
                 AuthenticatedUser = new User
                 {
                     Id = authenticatedUser.UserId,
-                    Name = authenticatedUser.UserName
+                    Name = authenticatedUser.UserName,
+                    Rating = AuthenticatedUser.Rating
                 };
             }
 

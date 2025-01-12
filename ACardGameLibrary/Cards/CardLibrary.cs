@@ -1,6 +1,4 @@
-﻿using System.Linq.Expressions;
-
-namespace ACardGameLibrary
+﻿namespace ACardGameLibrary
 {
     public static class CardLibrary
     {
@@ -86,7 +84,7 @@ namespace ACardGameLibrary
             new CurrencyCard
             {
                 Name = "Black market",
-                Text = "This card's value is equal to the highest value currency you've played this turn. Exile any currency you used to buy this.",
+                Text = "This card's value is equal to the highest value currency you've played this turn. Exile the currency you used to buy this.",
                 IsInShopPool = true,
                 Cost = 3,
                 AmountInShopPool = 2,
@@ -297,12 +295,15 @@ namespace ACardGameLibrary
                         EffectPhase = CardEffectPhase.OnAccepted,
                         Effect = (game, owner) =>
                         {
-                            var target = (CreatureCard)game.TargetedCards.Single();
+                            var target = (CreatureCard)game.TargetedCards.SingleOrDefault();
 
-                            target.TemporaryAddedPower++;
-                            target.TemporaryAddedDefense++;
+                            if (target != null)
+                            {
+                                target.TemporaryAddedPower++;
+                                target.TemporaryAddedDefense++;
 
-                            game.AddPublicLog($"{owner.Name} resolved Julius Caesar and added +1/+1 to {target.Name}");
+                                game.AddPublicLog($"{owner.Name} resolved Julius Caesar and added +1/+1 to {target.Name}");
+                            }
 
                             game.ResolveCombat();
                         }
@@ -1091,7 +1092,7 @@ namespace ACardGameLibrary
             new CreatureCard
             {
                 Name = "Squire",
-                Text = "When you play this, you may target a creature. It gets +1/+1.",
+                Text = "When you play this, you may target another creature. It gets +1/+1.",
                 Power = 1,
                 Defense = 2,
                 IsInShopPool = true,
@@ -1106,6 +1107,7 @@ namespace ACardGameLibrary
                 {
                     CardType.Creature
                 },
+                AdditionalTargetConditions = (game, target) => target != game.TargetingCard,
                 Effects = new List<CardEffect>
                 {
                     new CardEffect
@@ -1117,7 +1119,7 @@ namespace ACardGameLibrary
 
                             game.MessageToPlayer = new MessageToPlayerParams
                             {
-                                Message = "You may target a creature",
+                                Message = "You may target another creature",
                                 Severity = MessageSeverity.Information
                             };
                         }
@@ -1985,12 +1987,7 @@ namespace ACardGameLibrary
                         EffectPhase = CardEffectPhase.OnPlay,
                         Effect = (game, owner) =>
                         {
-                            if (game.EventListeners.Any(e => e.Name == "Lifelink" && e.Owner == owner))
-                            {
-                                return;
-                            }
-
-                            game.AddEventListener(new GameEventListener
+                            game.AddEventListenerIfNotExists(new GameEventListener
                             {
                                 Name = "Lifelink",
                                 Owner = owner,
@@ -2232,7 +2229,7 @@ namespace ACardGameLibrary
                         EffectPhase = CardEffectPhase.OnPlay,
                         Effect = (game, owner) =>
                         {
-                            game.AddEventListener(new GameEventListener
+                            game.AddEventListenerIfNotExists(new GameEventListener
                             {
                                 Name = "Vigilance",
                                 Owner = owner,
@@ -2241,15 +2238,18 @@ namespace ACardGameLibrary
                                 Effect = (game, owner) =>
                                 {
                                     var creatures = owner.ActiveCombatCards.Where(e => e is CreatureCard).Cast<CreatureCard>();
-                                    var creature = creatures.First(e => e.AttachedEquipments.Any(e => e.Name == "Vigilance") && e.Owner == owner);
 
-                                    if (creature != null)
+                                    var creature = creatures.FirstOrDefault(e => e.AttachedEquipments.Any(e => e.Name == "Vigilance"));
+
+                                    while (creature != null)
                                     {
-                                        creature.Reset();
-                                        creature.Owner.ActiveCombatCards.Remove(creature);
-                                        creature.Owner.Hand.Add(creature);
+                                        game.RemoveCardFromBattlefield(creature);
+
+                                        owner.Hand.Add(creature);
 
                                         game.AddPublicLog($"{creature.Name} was returned to {owner.Name}'s hand");
+
+                                        creature = creatures.FirstOrDefault(e => e.AttachedEquipments.Any(e => e.Name == "Vigilance"));
                                     }
 
                                     game.RemoveFirstListener("Vigilance", owner);
@@ -2298,7 +2298,7 @@ namespace ACardGameLibrary
                         EffectPhase = CardEffectPhase.OnPlay,
                         Effect = (game, owner) =>
                         {
-                            game.AddEventListener(new GameEventListener
+                            game.AddEventListenerIfNotExists(new GameEventListener
                             {
                                 Name = "Wololo",
                                 Owner = owner,
@@ -2310,20 +2310,22 @@ namespace ACardGameLibrary
 
                                     var creatures = enemy.ActiveCombatCards.Where(e => e is CreatureCard).Cast<CreatureCard>();
 
-                                    var convertedCreature = creatures.First(e => e.AttachedEquipments.Any(e => e.Name == "Wololo") && e.DealtDamage);
+                                    var convertedCreature = creatures.FirstOrDefault(e => e.AttachedEquipments.Any(e => e.Name == "Wololo") && e.DealtDamage);
 
-                                    if (convertedCreature != null)
+                                    while (convertedCreature != null)
                                     {
-                                        convertedCreature.Reset();
-                                        convertedCreature.Owner.ActiveCombatCards.Remove(convertedCreature);
+                                        var wololo = convertedCreature.AttachedEquipments.Where(e => e.Name == "Wololo").First();
+
+                                        game.RemoveCardFromBattlefield(wololo);
+
+                                        game.RemoveCardFromBattlefield(convertedCreature);
 
                                         convertedCreature.Owner = owner;
                                         owner.DiscardPile.Add(convertedCreature);
 
-                                        var wololo = owner.ActiveCombatCards.First(e => e.Name == "Wololo");
-                                        owner.ActiveCombatCards.Remove(wololo);
-
                                         game.AddPublicLog($"{owner.Name}'s Wololo converted {convertedCreature.Name}");
+
+                                        convertedCreature = creatures.FirstOrDefault(e => e.AttachedEquipments.Any(e => e.Name == "Wololo") && e.DealtDamage);
                                     }
 
                                     game.RemoveFirstListener("Wololo", owner);
@@ -2600,12 +2602,11 @@ namespace ACardGameLibrary
                                 Effect = (game, owner) =>
                                 {
                                     var creatures = owner.ActiveCombatCards.Where(e => e is CreatureCard).Cast<CreatureCard>();
-                                    var creature = creatures.First(e => e.AttachedEquipments.Any(e => e.Name == "Ring of power") && e.Owner == owner);
+                                    var creature = creatures.FirstOrDefault(e => e.AttachedEquipments.Any(e => e.Name == "Ring of power") && e.Owner == owner);
 
                                     if (creature != null)
                                     {
-                                        creature.Reset();
-                                        owner.ActiveCombatCards.Remove(creature);
+                                        game.RemoveCardFromBattlefield(creature);
 
                                         var sauron = GetCard("Sauron");
                                         sauron.Owner = owner;
@@ -3229,7 +3230,6 @@ namespace ACardGameLibrary
                 Cost = 3,
                 AmountInShopPool = 2,
                 MaxTargets = 1,
-                MinTargets = 1,
                 Types = new List<CardType>
                 {
                     CardType.Action
@@ -3577,7 +3577,7 @@ namespace ACardGameLibrary
             new Card
             {
                 Name = "Redeploy",
-                Text = "Put up to two creatures from your discard pile into your hand.",
+                Text = "Put up to two non-legendary creatures from your discard pile into your hand.",
                 IsInShopPool = true,
                 Cost = 6,
                 AmountInShopPool = 2,

@@ -271,6 +271,16 @@
             EventListeners.Add(listener);
         }
 
+        public void AddEventListenerIfNotExists(GameEventListener listener)
+        {
+            if (EventListeners.Any(e => e.Name == listener.Name && e.Owner == listener.Owner))
+            {
+                return;
+            }
+
+            EventListeners.Add(listener);
+        }
+
         public void RemoveFirstListener(string name, Player owner = null)
         {
             var query = EventListeners.AsEnumerable();
@@ -310,6 +320,8 @@
         public bool TriggerEvent(GameEvent gameEvent)
         {
             var triggeredListeners = new List<GameEventListener>(EventListeners.Where(e => e.Trigger == gameEvent && !e.IsTriggered && (!e.OwnersTurnOnly || e.Owner.IsActive)));
+
+            triggeredListeners.Reverse(); // Effects added last should resolve first
 
             foreach (GameEventListener listener in triggeredListeners)
             {

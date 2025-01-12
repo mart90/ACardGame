@@ -116,9 +116,9 @@ namespace ACardGame.UI
             };
             AddChild(Life);
 
-            AddSpacing(0.5);
             // Name
-            PlayerName = new TextArea(AssetManager, "messageFont", 15, true, 10)
+            SetCursor(72.5, 47.5);
+            PlayerName = new TextArea(AssetManager, "playerNameFont", 15, true, 10)
             {
                 Text = Player.Name,
                 ForceOneLine = true
@@ -208,7 +208,7 @@ namespace ACardGame.UI
             AddChild(EnemyShop);
 
             // Enemy life
-            SetCursor(68, 23);
+            SetCursor(68, 24);
             EnemyLife = new UiElement(AssetManager.LoadTexture("UI/life"), AssetManager.LoadFont("buttonFont"), Color.Black, 4)
             {
                 Text = "20",
@@ -216,9 +216,9 @@ namespace ACardGame.UI
             };
             AddChild(EnemyLife);
 
-            AddSpacing(0.5);
             // Enemy name
-            EnemyName = new TextArea(AssetManager, "messageFont", 15, true, 10)
+            SetCursor(72.5, 23.5);
+            EnemyName = new TextArea(AssetManager, "playerNameFont", 15, true, 10)
             {
                 Text = Enemy.Name,
                 ForceOneLine = true

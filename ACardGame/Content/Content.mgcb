@@ -125,6 +125,20 @@
 /processorParam:TextureFormat=Compressed
 /build:fonts/messageFont.spriteFont
 
+#begin fonts/playerNameFont.spriteFont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:fonts/playerNameFont.spriteFont
+
+#begin fonts/playerRatingFont.spriteFont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:fonts/playerRatingFont.spriteFont
+
 #begin graphics/cards/action.png
 /importer:TextureImporter
 /processor:TextureProcessor

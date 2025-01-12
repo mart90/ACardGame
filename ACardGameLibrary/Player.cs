@@ -20,7 +20,7 @@
                 CardLibrary.GetCard("Silver"),
                 CardLibrary.GetCard("Silver"),
                 CardLibrary.GetCard("Silver"),
-                CardLibrary.GetCard("Silver")
+                CardLibrary.GetCard("Silver"),
             };
 
             foreach (var card in Hand)
@@ -30,6 +30,7 @@
         }
 
         public string Name { get; set; }
+        public double Rating { get; set; }
 
         public int Life { get; set; }
 

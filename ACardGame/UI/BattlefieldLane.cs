@@ -59,14 +59,15 @@ namespace ACardGame.UI
             {
                 for (int i = 0; i < blockers.Count; i++)
                 {
-                    SetCursor(1 + relativeCardSizeX * i, playerIsAttacking ? 0 : 67);
+                    var blockerX = 1 + relativeCardSizeX * i;
+                    SetCursor(blockerX, playerIsAttacking ? 0 : 67);
 
                     var blocker = blockers[i];
                     var blockerSupports = blocker.AttachedEquipments;
 
                     if (blockerSupports.Any())
                     {
-                        GoDown();
+                        GoDown(false);
 
                         int startY = playerIsAttacking ? 0 : 67 - supportSpacing * blockerSupports.Count;
                         SetCursorY(startY);
@@ -82,7 +83,7 @@ namespace ACardGame.UI
                             supportContainer.DrawLayer = si;
                             supportContainer.SetCard(support);
                             AddChild(supportContainer);
-                            SetCursor(attackerX, startY + supportSpacing * (si + 1));
+                            SetCursor(blockerX, startY + supportSpacing * (si + 1));
                         }
                     }
 
