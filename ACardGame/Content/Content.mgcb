@@ -257,6 +257,18 @@
 /processorParam:TextureFormat=Color
 /build:graphics/UI/button_short.png
 
+#begin graphics/UI/card_explain.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:graphics/UI/card_explain.png
+
 #begin graphics/UI/card_selector.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -316,6 +328,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:graphics/UI/crossed_swords.png
+
+#begin graphics/UI/currency_explain.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:graphics/UI/currency_explain.png
 
 #begin graphics/UI/go_bottom.png
 /importer:TextureImporter
@@ -412,12 +436,6 @@
 /processor:SoundEffectProcessor
 /processorParam:Quality=Best
 /build:sounds/game_start.wav
-
-#begin sounds/playcard.wav
-/importer:WavImporter
-/processor:SoundEffectProcessor
-/processorParam:Quality=Best
-/build:sounds/playcard.wav
 
 #begin sounds/playcard.wav
 /importer:WavImporter

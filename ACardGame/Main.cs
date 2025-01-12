@@ -74,6 +74,7 @@ namespace ACardGame
                 new MainMenu(_assetManager, _serverConnection),
                 new LoginScreen(_assetManager, _serverConnection),
                 new MultiplayerHome(_assetManager, _serverConnection),
+                new HowToPlay(_assetManager),
             };
 
             _activeWindow = _topLevelWindows.Single(e => e is MainMenu);

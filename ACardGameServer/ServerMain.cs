@@ -158,6 +158,8 @@ namespace ACardGameServer
 
             UpdateEloRatings(ref p1rating, ref p2rating, client.AuthenticatedUser.KFactor, opponent.AuthenticatedUser.KFactor, 1);
 
+            // TODO rating change in game_player
+
             client.AuthenticatedUser.Rating = p1rating;
             opponent.AuthenticatedUser.Rating = p2rating;
 

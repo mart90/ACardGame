@@ -4,6 +4,7 @@
     {
         MainMenu,
         HotSeatGame,
+        HowToPlay,
 
         LoginScreen,
         MultiplayerHome,

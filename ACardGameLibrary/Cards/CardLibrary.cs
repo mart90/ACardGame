@@ -964,7 +964,7 @@ namespace ACardGameLibrary
             new CreatureCard
             {
                 Name = "Sauron",
-                Text = "If the Ring of power is attached to this at the end of combat, you win the game.",
+                Text = "Trample. If the Ring of power is attached to this at the end of combat, you win the game.",
                 Power = 6,
                 Defense = 6,
                 HasTrample = true,
@@ -1614,7 +1614,7 @@ namespace ACardGameLibrary
             new CreatureCard
             {
                 Name = "Catapult",
-                Text = "Trample. (When this is successfully blocked, it deals its power minus the blockers' defense in damage to your opponent).",
+                Text = "Trample.",
                 Power = 5,
                 Defense = 1,
                 HasTrample = true,
@@ -1761,7 +1761,7 @@ namespace ACardGameLibrary
             new CreatureCard
             {
                 Name = "Trebuchet",
-                Text = "Can't block. Trample. (When this is successfully blocked, it deals its power minus the blockers' defense in damage).",
+                Text = "Can't block. Trample.",
                 Power = 7,
                 Defense = 1,
                 HasTrample = true,
@@ -3348,7 +3348,7 @@ namespace ACardGameLibrary
                 Name = "Reform",
                 Text = "Exile a card from your hand. Draw three cards.",
                 IsInShopPool = true,
-                Cost = 5,
+                Cost = 4,
                 AmountInShopPool = 2,
                 TargetsHand = true,
                 MinTargets = 1,
