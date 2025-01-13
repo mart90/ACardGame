@@ -22,6 +22,7 @@
             PublicLog = new List<GameLog>() { new("---- START ----") };
 
             ShopPool = CardLibrary.GetStartingShop();
+            StartingShop = new List<Card>(ShopPool);
             ShopDiscard = new List<Card>();
         }
 
@@ -37,6 +38,7 @@
         public List<GameEventListener> EventListeners { get; private set; }
 
         public List<Card> ShopPool { get; set; }
+        public List<Card> StartingShop { get; set; }
         public List<Card> ShopDiscard { get; set; }
 
         public List<GameLog> PublicLog { get; set; }
@@ -86,6 +88,8 @@
         public List<Card> TargetedCards => AllCards.Where(e => e.IsTargeted).ToList();
         public Card? TargetingCard => AllCards.SingleOrDefault(e => e.IsTargeting);
         public Card? CardBeingPlayed => AllCards.SingleOrDefault(e => e.IsBeingPlayed);
+
+        public int CharlemagneCounter { get; set; }
 
         public Card GetCardById(int id)
         {
@@ -192,6 +196,7 @@
 
             if (IsInCombat && !RequireAccept)
             {
+                CheckForDeadCreatures();
                 SwitchActivePlayer();
             }
 
@@ -200,6 +205,16 @@
             if (card.Effects.Any(e => e.EffectPhase == CardEffectPhase.OnAcceptedAfterPlay))
             {
                 ResolvingAfterPlay = true;
+            }
+        }
+
+        public void CheckForDeadCreatures()
+        {
+            var listOfCreatures = new List<CreatureCard>(ActiveCombatCards.Where(e => e is CreatureCard).Cast<CreatureCard>());
+
+            foreach (var c in listOfCreatures)
+            {
+                RemoveIfDead(c);
             }
         }
 

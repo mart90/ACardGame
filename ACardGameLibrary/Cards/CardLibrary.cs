@@ -279,7 +279,8 @@
                                     game.MessageToPlayer = new MessageToPlayerParams
                                     {
                                         Message = "You may target a creature",
-                                        Severity = MessageSeverity.Information
+                                        Severity = MessageSeverity.Information,
+                                        ActivePlayerOnly = true
                                     };
 
                                     if (!owner.IsActive)
@@ -526,7 +527,7 @@
             new Card
             {
                 Name = "Charlemagne",
-                Text = "When attacking, the first creature you play can't be blocked.",
+                Text = "When attacking, the second creature you play can't be blocked.",
                 IsInShopPool = true,
                 Cost = 3,
                 AmountInShopPool = 1,
@@ -546,10 +547,17 @@
                                 Name = "Charlemagne",
                                 Owner = owner,
                                 OwnersTurnOnly = true,
-                                Trigger = GameEvent.StartingCombat,
+                                Trigger = GameEvent.PlayingCreature,
                                 Effect = (game, owner) =>
                                 {
-                                    ((CreatureCard)game.CardBeingPlayed).IsUnblockable = true;
+                                    game.CharlemagneCounter++;
+
+                                    if (game.CharlemagneCounter == 2)
+                                    {
+                                        ((CreatureCard)game.CardBeingPlayed).IsUnblockable = true;
+                                        
+                                        game.CharlemagneCounter = 0;
+                                    }
                                 }
                             });
                         }
@@ -1595,7 +1603,9 @@
                                 AddedDefense = -1
                             });
 
-                            foreach (var creature in game.Enemy.ActiveCombatCards.Where(e => e is CreatureCard).Cast<CreatureCard>())
+                            var listOfCreatures = new List<CreatureCard>(game.Enemy.ActiveCombatCards.Where(e => e is CreatureCard).Cast<CreatureCard>());
+
+                            foreach (var creature in listOfCreatures)
                             {
                                 game.RemoveIfDead(creature);
                             }

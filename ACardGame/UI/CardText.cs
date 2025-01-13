@@ -26,9 +26,14 @@ namespace ACardGame.UI
 
             if (ForceOneLine)
             {
-                while ((TextFont.MeasureString(Text) * fontScale).X > AbsoluteLocation.Width)
+                if ((TextFont.MeasureString(Text) * fontScale).X > AbsoluteLocation.Width)
                 {
-                    fontScale -= .01f;
+                    while ((TextFont.MeasureString(Text) * fontScale).X > AbsoluteLocation.Width)
+                    {
+                        fontScale -= .01f;
+                    }
+
+                    fontScale -= .1f;
                 }
             }
 

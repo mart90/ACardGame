@@ -14,12 +14,12 @@ namespace ACardGame.UI
 
         public TextArea Title { get; set; }
 
+        public const int MAX_CARDS = 16;
+
         private readonly UiElement _goToTop;
         private readonly UiElement _goToBottom;
 
-        private int _firstCardIndex;
-
-        private const int MAX_CARDS = 16;
+        public int FirstCardIndex { get; set; }
 
         public CardStackViewer(AssetManager assetManager, double relativeSize, bool sizeExpressedInX)
             : base(assetManager, 0.2, relativeSize, sizeExpressedInX)
@@ -74,12 +74,12 @@ namespace ACardGame.UI
 
             if (cards.Count > MAX_CARDS)
             {
-                _firstCardIndex = cards.Count - MAX_CARDS;
+                FirstCardIndex = cards.Count - MAX_CARDS;
                 _goToTop.IsVisible = true;
             }
             else
             {
-                _firstCardIndex = 0;
+                FirstCardIndex = 0;
             }
 
             SetCards();
@@ -110,7 +110,7 @@ namespace ACardGame.UI
         private void SetCards()
         {
             var cards = new List<Card>(Cards);
-            cards.RemoveRange(0, _firstCardIndex);
+            cards.RemoveRange(0, FirstCardIndex);
 
             for (int i = 0; i < MAX_CARDS && i < cards.Count; i++)
             {
@@ -120,16 +120,16 @@ namespace ACardGame.UI
 
         public override void ScrollUp(Point position)
         {
-            if (Cards.Count <= MAX_CARDS || _firstCardIndex == 0)
+            if (Cards.Count <= MAX_CARDS || FirstCardIndex == 0)
             {
                 return;
             }
 
-            _firstCardIndex--;
+            FirstCardIndex--;
 
             _goToBottom.IsVisible = true;
 
-            if (_firstCardIndex == 0)
+            if (FirstCardIndex == 0)
             {
                 _goToTop.IsVisible = false;
             }
@@ -139,21 +139,29 @@ namespace ACardGame.UI
 
         public override void ScrollDown(Point position)
         {
-            if (Cards.Count - _firstCardIndex <= MAX_CARDS)
+            if (Cards.Count - FirstCardIndex <= MAX_CARDS)
             {
                 return;
             }
 
-            _firstCardIndex++;
+            FirstCardIndex++;
 
             _goToTop.IsVisible = true;
 
-            if (Cards.Count - _firstCardIndex == MAX_CARDS)
+            if (Cards.Count - FirstCardIndex == MAX_CARDS)
             {
                 _goToBottom.IsVisible = false;
             }
 
             SetCards();
+        }
+
+        public void GoToTop()
+        {
+            while (FirstCardIndex > 0)
+            {
+                ScrollUp(new Point());
+            }
         }
     }
 }

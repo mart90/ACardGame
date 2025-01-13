@@ -15,10 +15,12 @@ namespace ACardGame.UI
 
             var logEntries = Text.Split('\n').ToList();
 
+            int newLines = 0;
+
             for (int i = 0; i < logEntries.Count; i++)
             {
                 var entry = logEntries[i];
-                var entryLocation = new Vector2(AbsoluteLocation.X, AbsoluteLocation.Y) + new Vector2(0, i * TextFont.LineSpacing * fontScale);
+                var entryLocation = new Vector2(AbsoluteLocation.X, AbsoluteLocation.Y) + new Vector2(0, (newLines + i) * TextFont.LineSpacing * fontScale);
 
                 if (entryLocation.Y > AbsoluteLocation.Y + AbsoluteLocation.Height - 50)
                 {
@@ -37,7 +39,7 @@ namespace ACardGame.UI
                     if (size.X > AbsoluteLocation.Width - 5)
                     {
                         lines.Add(currentLine);
-                        i++;
+                        newLines++;
                         currentLine = "..........." + word;
                     }
                     else

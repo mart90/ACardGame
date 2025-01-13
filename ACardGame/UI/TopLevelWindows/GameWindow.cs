@@ -70,6 +70,9 @@ namespace ACardGame.UI
 
         public OptionPicker OptionPicker { get; set; }
 
+        public Button ViewAllCardsButton { get; set; }
+        public AllCardsViewer AllCardsViewer { get; set; }
+
         public bool ShopEnabled { get; set; }
 
         public abstract Player Player { get; }
@@ -233,8 +236,25 @@ namespace ACardGame.UI
             };
             AddChild(CardStackViewer);
 
+            // All cards viewer
+            SetCursor(25, 15);
+            AllCardsViewer = new AllCardsViewer(AssetManager, 50, true)
+            {
+                DrawLayer = 1
+            };
+            AllCardsViewer.Build(GameState.StartingShop);
+            AddChild(AllCardsViewer);
+
+            // View all cards button
+            SetCursor(90.5, 97);
+            ViewAllCardsButton = new Button(AssetManager, ButtonType.Long, 7, true, "All cards", ViewAllCards)
+            {
+                ForceOneLine = true
+            };
+            AddChild(ViewAllCardsButton);
+
             // Hovered card viewer
-            SetCursor(88, 65);
+            SetCursor(88.5, 62.5);
             HoveredCardViewer = new CardContainer(AssetManager, 11, true);
             HoveredCardViewer.CardTitle.TextFont = AssetManager.LoadFont("cardTitleFont_viewer");
             HoveredCardViewer.CardText.TextFont = AssetManager.LoadFont("cardTextFont_viewer");
@@ -634,20 +654,19 @@ namespace ACardGame.UI
             GameState.ActionRefreshShop();
         }
 
+        private void ViewAllCards()
+        {
+            AllCardsViewer.IsVisible = true;
+        }
+
         public override void LeftClick(Point position)
         {
+            LogViewer.IsVisible = false;
+            AllCardsViewer.IsVisible = false;
+            MessageToPlayer.IsVisible = false;
+
             try
             {
-                if (LogViewer.IsVisible)
-                {
-                    LogViewer.IsVisible = false;
-                }
-
-                if (MessageToPlayer.IsVisible)
-                {
-                    MessageToPlayer.IsVisible = false;
-                }
-
                 var child = FilterChildren(e => e.AbsoluteLocation.Contains(position) && e.IsVisible)
                     .FirstOrDefault();
 
@@ -840,6 +859,12 @@ namespace ACardGame.UI
                 GameState.ResolvingAfterPlay = false;
                 GameState.ResolvedEffects = 0;
                 card.IsBeingPlayed = false;
+
+                if (GameState.IsInCombat)
+                {
+                    GameState.CheckForDeadCreatures();
+                }
+
                 GameState.TriggerEvent(GameEvent.DoneResolving);
             }
         }
@@ -1024,7 +1049,7 @@ namespace ACardGame.UI
                 ToggleShopButton.IsVisible = false;
             }
 
-            if (GameState.MessageToPlayer != null)
+            if (GameState.MessageToPlayer != null && (!GameState.MessageToPlayer.ActivePlayerOnly || Player.IsActive))
             {
                 SetMessageToPlayer(GameState.MessageToPlayer);
                 GameState.MessageToPlayer = null;
@@ -1082,7 +1107,7 @@ namespace ACardGame.UI
             if (GameState.ActivateSelectorFlag)
             {
                 GameState.ActivateSelectorFlag = false;
-                CardSelector.SetCards(GameState.CardsToChooseFromSelector);
+                CardSelector.Build(GameState.CardsToChooseFromSelector);
                 CardSelector.IsVisible = true;
                 EndTurnButton.IsVisible = false;
                 AcceptButton.IsVisible = true;

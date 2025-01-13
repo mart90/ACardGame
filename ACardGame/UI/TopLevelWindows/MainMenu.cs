@@ -49,6 +49,15 @@ namespace ACardGame.UI
             {
                 NewUiState = UiState.Exiting;
             }));
+
+            GoRight();
+            SetCursor(91, 96);
+
+            AddChild(new TextArea(assetManager, "buttonFont", 8, true, 3) 
+            { 
+                Text = $"Version {Main.GameVersion}",
+                ForceOneLine = true
+            });
         }
 
         private void OpenUrl(string url)

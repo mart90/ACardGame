@@ -1,5 +1,4 @@
 Rating change in game_player
-Restore game
 Leaderboard
 Making sure opponent still here
 Reconnecting

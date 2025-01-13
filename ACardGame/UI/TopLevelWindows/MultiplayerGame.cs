@@ -838,6 +838,12 @@ namespace ACardGame.UI
                 GameState.ResolvingAfterPlay = false;
                 GameState.ResolvedEffects = 0;
                 card.IsBeingPlayed = false;
+
+                if (GameState.IsInCombat)
+                {
+                    GameState.CheckForDeadCreatures();
+                }
+
                 GameState.TriggerEvent(GameEvent.DoneResolving);
 
                 SendMakeMoveMessage();
