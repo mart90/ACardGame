@@ -25,6 +25,7 @@
         RefreshedShop,
 
         StartingCombat,
+        CombatPassing,
         ResolvingCombat,
         DealingDamage,
         EndingCombat,

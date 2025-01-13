@@ -527,7 +527,7 @@
             new Card
             {
                 Name = "Charlemagne",
-                Text = "When attacking, the second creature you play can't be blocked.",
+                Text = "When attacking, the second creature you play can't be blocked. (Does not work with Champion).",
                 IsInShopPool = true,
                 Cost = 3,
                 AmountInShopPool = 1,
@@ -554,9 +554,12 @@
 
                                     if (game.CharlemagneCounter == 2)
                                     {
-                                        ((CreatureCard)game.CardBeingPlayed).IsUnblockable = true;
+                                        var creature = (CreatureCard)game.CardBeingPlayed;
                                         
-                                        game.CharlemagneCounter = 0;
+                                        if (creature.Name != "Champion")
+                                        {
+                                            creature.IsUnblockable = true;
+                                        }
                                     }
                                 }
                             });
@@ -2024,6 +2027,42 @@
 
             new SupportCard
             {
+                Name = "Blacksmith",
+                Text = "Your creatures have +1 power.",
+                IsInShopPool = true,
+                Cost = 2,
+                AmountInShopPool = 2,
+                IsPermanent = true,
+                Effects = new List<CardEffect>
+                {
+                    new CardEffect
+                    {
+                        EffectPhase = CardEffectPhase.OnPlay,
+                        Effect = (game, owner) =>
+                        {
+                            game.CombatModifiers.Add(new CombatModifier
+                            {
+                                Name = "Blacksmith",
+                                Owner = owner,
+                                OwnerOnly = true,
+                                AddedPower = 1
+                            });
+                        }
+                    },
+                    new CardEffect
+                    {
+                        EffectPhase = CardEffectPhase.OnRemove,
+                        Effect = (game, owner) =>
+                        {
+                            var modifier = game.CombatModifiers.First(e => e.Name == "Blacksmith" && e.Owner == owner);
+                            game.CombatModifiers.Remove(modifier);
+                        }
+                    },
+                }
+            },
+
+            new SupportCard
+            {
                 Name = "Rout",
                 Text = "Return target creature to its owner's hand. They can't play it again this combat.",
                 IsInShopPool = true,
@@ -2108,7 +2147,7 @@
                 Name = "Cancel",
                 Text = "Target a support card. Its owner discards it.",
                 IsInShopPool = true,
-                Cost = 4,
+                Cost = 3,
                 AmountInShopPool = 2,
                 TargetsOnPlay = true,
                 MinTargets = 1,
@@ -2188,6 +2227,59 @@
                             owner.ActiveCombatCards.Add(card);
                         }
                     }
+                }
+            },
+
+            new SupportCard
+            {
+                Name = "Patience",
+                Text = "You gain 2 life each time you pass during this combat.",
+                IsInShopPool = true,
+                Cost = 4,
+                AmountInShopPool = 2,
+                IsPermanent = true,
+                Effects = new List<CardEffect>
+                {
+                    new CardEffect
+                    {
+                        EffectPhase = CardEffectPhase.OnPlay,
+                        Effect = (game, owner) =>
+                        {
+                            game.AddEventListener(new GameEventListener
+                            {
+                                Name = "Patience",
+                                Owner = owner,
+                                OwnersTurnOnly = true,
+                                Trigger = GameEvent.CombatPassing,
+                                Effect = (game, owner) =>
+                                {
+                                    owner.Life += 2;
+                                }
+                            });
+
+                            game.AddEventListener(new GameEventListener
+                            {
+                                Name = "PatienceEnd",
+                                Owner = owner,
+                                OwnersTurnOnly = false,
+                                Trigger = GameEvent.EndingCombat,
+                                Effect = (game, owner) =>
+                                {
+                                    game.RemoveFirstListener("Patience", owner);
+                                    game.RemoveFirstListener("PatienceEnd", owner);
+                                }
+                            });
+                        }
+                    },
+                    new CardEffect
+                    {
+                        EffectPhase = CardEffectPhase.OnRemove,
+                        Effect = (game, owner) =>
+                        {
+                            game.RemoveFirstListener("Patience", owner);
+                            game.RemoveFirstListener("PatienceEnd", owner);
+                        }
+                    },
                 }
             },
 

@@ -460,6 +460,8 @@
 
             TriggerEvent(GameEvent.EndingCombat);
 
+            CharlemagneCounter = 0;
+
             foreach (var creature in Attacker.ActiveCombatCards.Concat(Defender.ActiveCombatCards).Where(e => e is CreatureCard).Cast<CreatureCard>())
             {
                 creature.Reset();
@@ -670,6 +672,8 @@
 
         public void CombatPass()
         {
+            TriggerEvent(GameEvent.CombatPassing);
+
             AddPublicLog($"{ActivePlayer.Name} passed");
 
             if (CombatPassed)
