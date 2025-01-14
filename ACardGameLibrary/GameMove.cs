@@ -6,9 +6,9 @@ namespace ACardGameLibrary
     {
         public int Id { get; set; }
 
-        public int GameId { get; set; }
+        public int? GameId { get; set; }
 
-        public int UserId { get; set; }
+        public int? UserId { get; set; }
 
         public MoveType Type { get; set; }
 
@@ -17,6 +17,8 @@ namespace ACardGameLibrary
         public int? CardId { get; set; }
 
         public string CardName { get; set; }
+
+        public int? ShopRefreshCost { get; set; }
 
         public List<GameMoveAcceptParams> AcceptParams { get; set; }
 

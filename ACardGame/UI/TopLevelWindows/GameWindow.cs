@@ -594,9 +594,9 @@ namespace ACardGame.UI
             CardStackViewer.Show(GameState.ShopDiscard.Where(e => e.Cost == shopLevel).ToList());
         }
 
-        private void SetShopRefreshCost(int cost)
+        protected virtual void SetShopRefreshCost(int cost)
         {
-            GameState.ActivePlayer.ShopRefreshCost = cost;
+            Player.ShopRefreshCost = cost;
             ShopRefreshCostButtons.ForEach(e => e.IsSelected = false);
             ShopRefreshCostButtons.Single(e => e.Text == cost.ToString()).IsSelected = true;
         }

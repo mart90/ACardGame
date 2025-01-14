@@ -1,6 +1,7 @@
 ﻿using ACardGameLibrary;
 using LiteNetLib;
 using LiteNetLib.Utils;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 
@@ -158,23 +159,27 @@ namespace ACardGameServer
 
             UpdateEloRatings(ref p1rating, ref p2rating, client.AuthenticatedUser.KFactor, opponent.AuthenticatedUser.KFactor, 1);
 
-            // TODO rating change in game_player
+            client.InGame.Players.Single(e => e.UserId == client.AuthenticatedUser.Id).RatingChange = p1rating - client.AuthenticatedUser.Rating;
+            client.InGame.Players.Single(e => e.UserId == opponent.AuthenticatedUser.Id).RatingChange = p2rating - opponent.AuthenticatedUser.Rating;
 
             client.AuthenticatedUser.Rating = p1rating;
             opponent.AuthenticatedUser.Rating = p2rating;
 
-            if (client.AuthenticatedUser.KFactor > 30)
+            if (client.AuthenticatedUser.KFactor > 34)
             {
-                client.AuthenticatedUser.KFactor -= 5;
+                client.AuthenticatedUser.KFactor -= 3;
             }
-            if (opponent.AuthenticatedUser.KFactor > 30)
+            if (opponent.AuthenticatedUser.KFactor > 34)
             {
-                opponent.AuthenticatedUser.KFactor -= 5;
+                opponent.AuthenticatedUser.KFactor -= 3;
             }
 
             _dataContext.SaveChanges();
 
             SendResponse(client, StatusCode.Ok);
+
+            SendMessage(client, ServerMessageType.UpdatedRating, p1rating);
+            SendMessage(opponent, ServerMessageType.UpdatedRating, p2rating);
         }
 
         public void JoinChallengeById(Client client, string challengeId)
@@ -289,23 +294,30 @@ namespace ACardGameServer
 
         public void Login(Client client, AuthenticateMessage loginMessage)
         {
-            client.AuthenticatedUser = _dataContext.Users
+            var user = _dataContext.Users
                 .Where(e => e.Name == loginMessage.Username && e.PasswordHash == loginMessage.PasswordHash)
                 .SingleOrDefault();
 
-            if (client.AuthenticatedUser != null)
-            {
-                SendResponse(client, StatusCode.Ok, new UserAuthenticatedResponse
-                {
-                    UserId = client.AuthenticatedUser.Id,
-                    UserName = client.AuthenticatedUser.Name,
-                    Rating = client.AuthenticatedUser.Rating
-                });
-            }
-            else
+            if (user == null)
             {
                 SendResponse(client, StatusCode.BadRequest, "Invalid credentials");
+                return;
             }
+
+            if (_clients.Any(e => e.AuthenticatedUser?.Name == loginMessage.Username))
+            {
+                SendResponse(client, StatusCode.BadRequest, "You have an existing open session");
+                return;
+            }
+
+            client.AuthenticatedUser = user;
+
+            SendResponse(client, StatusCode.Ok, new UserAuthenticatedResponse
+            {
+                UserId = client.AuthenticatedUser.Id,
+                UserName = client.AuthenticatedUser.Name,
+                Rating = client.AuthenticatedUser.Rating
+            });
         }
 
         public void MakeMove(Client client, GameMove makeMoveMessage)

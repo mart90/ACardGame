@@ -1,6 +1,4 @@
-Fatigue
 Enemy shop level visible
-Rating change in game_player
 Leaderboard
 Making sure opponent still here
 Reconnecting

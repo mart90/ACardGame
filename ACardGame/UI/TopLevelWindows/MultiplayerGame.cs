@@ -80,20 +80,6 @@ namespace ACardGame.UI
         {
             base.Update();
 
-            //// FOR DEBUGGING
-            var allcards = GameState.AllCards;
-            foreach (string name in allcards
-                .Where(e => e.Name != "Silver" && e.Name != "Gold")
-                .Select(e => e.Name)
-                .Distinct())
-            {
-                if (allcards.Count(e => e.Name == name) > 2)
-                {
-                    Logger.LogDebug($"Uh oh");
-                }
-            }
-            //////////////////
-
             if (UpdateCounter % 15 == 0)
             {
                 _server.PollEvents();
@@ -105,6 +91,11 @@ namespace ACardGame.UI
                 {
                     var gameMove = JsonConvert.DeserializeObject<GameMove>(_server.IncomingMessage.Data);
                     ResolveGameMove(gameMove);
+                }
+                else if (_server.IncomingMessage.MessageType == ServerMessageType.UpdatedRating)
+                {
+                    AuthenticatedUser.Rating = JsonConvert.DeserializeObject<double>(_server.IncomingMessage.Data);
+                    PlayerRating.Text = Math.Round(AuthenticatedUser.Rating).ToString();
                 }
 
                 _server.IncomingMessage = null;
@@ -181,6 +172,10 @@ namespace ACardGame.UI
                 else if (move.Type == MoveType.UpgradingShop)
                 {
                     GameState.UpgradeShop();
+                }
+                else if (move.Type == MoveType.ChangingRefreshCost)
+                {
+                    GameState.ActivePlayer.ShopRefreshCost = move.ShopRefreshCost.Value;
                 }
                 else if (move.Type == MoveType.BuyingSilver)
                 {
@@ -485,6 +480,25 @@ namespace ACardGame.UI
             };
 
             base.UpgradeShop();
+
+            SendMakeMoveMessage();
+        }
+
+        protected override void SetShopRefreshCost(int cost)
+        {
+            if (CheckRequireAccept())
+            {
+                return;
+            }
+
+            _makeMoveMessage = new GameMove
+            {
+                GameId = Id,
+                Type = MoveType.ChangingRefreshCost,
+                ShopRefreshCost = cost
+            };
+
+            base.SetShopRefreshCost(cost);
 
             SendMakeMoveMessage();
         }

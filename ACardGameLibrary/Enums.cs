@@ -74,7 +74,8 @@
     public enum ServerMessageType
     {
         GameStart,
-        MakeMove
+        MakeMove,
+        UpdatedRating
     }
 
     public enum StatusCode
@@ -91,6 +92,7 @@
         BuyingFromShop,
         UpgradingShop,
         RefreshingShop,
+        ChangingRefreshCost,
         BuyingSilver,
         BuyingGold,
         Worshiping,
