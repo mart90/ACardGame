@@ -18,7 +18,7 @@
         public string PlayedOnVersion { get; set; }
         public int ShuffleSeed { get; set; }
 
-        public int WinnerId { get; set; }
+        public int? WinnerId { get; set; }
         public User? Winner { get; set; }
 
         public List<GamePlayer> Players { get; } = new();
@@ -32,7 +32,7 @@
         public int UserId { get; set; }
         public User Player { get; set; }
 
-        public double RatingChange { get; set; }
+        public double? RatingChange { get; set; }
     }
 
     public class CardBuy

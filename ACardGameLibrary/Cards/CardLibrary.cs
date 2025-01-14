@@ -1159,7 +1159,7 @@
             {
                 Name = "Scout",
                 Text = "When you play this, look at your opponent's hand.",
-                Power = 1,
+                Power = 2,
                 Defense = 1,
                 IsInShopPool = true,
                 Cost = 2,
@@ -1503,7 +1503,7 @@
             new CreatureCard
             {
                 Name = "Falcon",
-                Text = "When you play this, look at your opponent's hand. You may return this to your hand.",
+                Text = "When you play this, look at your opponent's hand. Then, you may return this to your hand.",
                 Power = 2,
                 Defense = 2,
                 IsInShopPool = true,
@@ -1580,8 +1580,8 @@
             new CreatureCard
             {
                 Name = "Crossbowman",
-                Text = "Your opponent's creatures have -1 defense.",
-                Power = 4,
+                Text = "When this attacks, deal 2 damage to your opponent.",
+                Power = 3,
                 Defense = 2,
                 IsInShopPool = true,
                 Cost = 5,
@@ -1598,31 +1598,15 @@
                         EffectPhase = CardEffectPhase.OnPlay,
                         Effect = (game, owner) =>
                         {
-                            game.CombatModifiers.Add(new CombatModifier
+                            if (!owner.IsAttacking)
                             {
-                                Name = "Crossbowman",
-                                Owner = owner,
-                                EnemyOnly = true,
-                                AddedDefense = -1
-                            });
-
-                            var listOfCreatures = new List<CreatureCard>(game.Enemy.ActiveCombatCards.Where(e => e is CreatureCard).Cast<CreatureCard>());
-
-                            foreach (var creature in listOfCreatures)
-                            {
-                                game.RemoveIfDead(creature);
+                                return;
                             }
+
+                            game.DealDamage(2);
+                            game.AddPublicLog($"Crossbowman dealt {game.DamageBeingDealt} damage to {game.Enemy.Name}");
                         }
-                    },
-                    new CardEffect
-                    {
-                        EffectPhase = CardEffectPhase.OnRemove,
-                        Effect = (game, owner) =>
-                        {
-                            var modifier = game.CombatModifiers.First(e => e.Name == "Crossbowman" && e.Owner == owner);
-                            game.CombatModifiers.Remove(modifier);
-                        }
-                    },
+                    }
                 }
             },
 
@@ -2232,8 +2216,8 @@
 
             new SupportCard
             {
-                Name = "Patience",
-                Text = "You gain 2 life each time you pass during this combat.",
+                Name = "Volley",
+                Text = "Your opponent's creatures have -1 defense.",
                 IsInShopPool = true,
                 Cost = 4,
                 AmountInShopPool = 2,
@@ -2245,29 +2229,12 @@
                         EffectPhase = CardEffectPhase.OnPlay,
                         Effect = (game, owner) =>
                         {
-                            game.AddEventListener(new GameEventListener
+                            game.CombatModifiers.Add(new CombatModifier
                             {
-                                Name = "Patience",
+                                Name = "Volley",
                                 Owner = owner,
-                                OwnersTurnOnly = true,
-                                Trigger = GameEvent.CombatPassing,
-                                Effect = (game, owner) =>
-                                {
-                                    owner.Life += 2;
-                                }
-                            });
-
-                            game.AddEventListener(new GameEventListener
-                            {
-                                Name = "PatienceEnd",
-                                Owner = owner,
-                                OwnersTurnOnly = false,
-                                Trigger = GameEvent.EndingCombat,
-                                Effect = (game, owner) =>
-                                {
-                                    game.RemoveFirstListener("Patience", owner);
-                                    game.RemoveFirstListener("PatienceEnd", owner);
-                                }
+                                EnemyOnly = true,
+                                AddedDefense = -1
                             });
                         }
                     },
@@ -2276,10 +2243,10 @@
                         EffectPhase = CardEffectPhase.OnRemove,
                         Effect = (game, owner) =>
                         {
-                            game.RemoveFirstListener("Patience", owner);
-                            game.RemoveFirstListener("PatienceEnd", owner);
+                            var modifier = game.CombatModifiers.First(e => e.Name == "Volley" && e.Owner == owner);
+                            game.CombatModifiers.Remove(modifier);
                         }
-                    },
+                    }
                 }
             },
 

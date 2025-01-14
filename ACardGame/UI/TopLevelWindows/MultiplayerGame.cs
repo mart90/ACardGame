@@ -81,17 +81,17 @@ namespace ACardGame.UI
             base.Update();
 
             //// FOR DEBUGGING
-            //var allcards = GameState.AllCards;
-            //foreach (string name in allcards
-            //    .Where(e => e.Name != "Silver" && e.Name != "Gold")
-            //    .Select(e => e.Name)
-            //    .Distinct())
-            //{
-            //    if (allcards.Count(e => e.Name == name) > 2)
-            //    {
-            //        Logger.LogDebug($"Uh oh");
-            //    }
-            //}
+            var allcards = GameState.AllCards;
+            foreach (string name in allcards
+                .Where(e => e.Name != "Silver" && e.Name != "Gold")
+                .Select(e => e.Name)
+                .Distinct())
+            {
+                if (allcards.Count(e => e.Name == name) > 2)
+                {
+                    Logger.LogDebug($"Uh oh");
+                }
+            }
             //////////////////
 
             if (UpdateCounter % 15 == 0)

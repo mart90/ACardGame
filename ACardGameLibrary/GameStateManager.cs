@@ -385,6 +385,11 @@
 
             ResetTriggers(GameEvent.EndingTurn);
 
+            if (ActivePlayer.Hand.Count > 12)
+            {
+                HandleFatigue();
+            }
+
             ActivePlayer.DrawCards(TurnNumber == 1 ? 2 : 3);
 
             ActivePlayer.MoneyToSpend = 0;
@@ -415,6 +420,24 @@
             foreach (var player in Players)
             {
                 player.IsActive = !player.IsActive;
+            }
+        }
+
+        private void HandleFatigue()
+        {
+            int lifeLost = ActivePlayer.Hand.Count - 12;
+            ActivePlayer.Life -= lifeLost;
+
+            MessageToPlayer = new MessageToPlayerParams
+            {
+                ActivePlayerOnly = false,
+                Message = $"{ActivePlayer.Name} lost {lifeLost} life from having too many cards in hand",
+                Severity = MessageSeverity.Warning
+            };
+
+            if (ActivePlayer.Life <= 0)
+            {
+                Winner = Enemy;
             }
         }
 

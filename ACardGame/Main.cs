@@ -49,9 +49,9 @@ namespace ACardGame
             ScreenHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height;
             _graphics.IsFullScreen = true;
 
-            //ScreenWidth = 1920;
-            //ScreenHeight = 1080;
-            //_graphics.IsFullScreen = false;
+            ScreenWidth = 1920;
+            ScreenHeight = 1080;
+            _graphics.IsFullScreen = false;
 
             _graphics.PreferredBackBufferWidth = ScreenWidth;
             _graphics.PreferredBackBufferHeight = ScreenHeight;
