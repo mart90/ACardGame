@@ -2,3 +2,7 @@ Enemy shop level visible
 Leaderboard
 Making sure opponent still here
 Reconnecting
+
+BUGS
+Snipe more than one element?
+Charlemagne sometimes no work

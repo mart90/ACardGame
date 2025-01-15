@@ -212,11 +212,12 @@ namespace ACardGameServer
                 return;
             }
 
-            client.ChallengeGuid = null;
-
             var opponent = openChallenges
                 .OrderBy(e => Math.Abs(e.AuthenticatedUser.Rating - client.AuthenticatedUser.Rating))
                 .First();
+
+            client.ChallengeGuid = null;
+            opponent.ChallengeGuid = null;
 
             CreateGame(client, opponent);
         }

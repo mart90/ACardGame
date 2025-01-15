@@ -1451,16 +1451,14 @@
                         {
                             var target = (CreatureCard)game.TargetedCards.FirstOrDefault();
 
-                            if (target == null)
+                            if (target != null)
                             {
-                                return;
+                                game.AddPublicLog($"{game.ActivePlayer.Name} used Scorpion to discard {target.Name}");
+
+                                game.RemoveCardFromBattlefield(target);
+
+                                game.MoveToDiscard(target);
                             }
-
-                            game.AddPublicLog($"{game.ActivePlayer.Name} used Scorpion to discard {target.Name}");
-
-                            game.RemoveCardFromBattlefield(target);
-
-                            game.MoveToDiscard(target);
 
                             game.SwitchActivePlayer();
                         }
@@ -2258,7 +2256,9 @@
                 Cost = 5,
                 AmountInShopPool = 2,
                 TargetsOnPlay = true,
+                MaxTargets = 1,
                 MinTargets = 1,
+                AdditionalPlayConditions = (game) => game.ActiveCombatCards.Count(e => e is CreatureCard) > 0,
                 ValidTargetTypes = new List<CardType>
                 {
                     CardType.Creature
