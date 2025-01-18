@@ -397,10 +397,7 @@
             ActivePlayer.FreeShopRefreshes = 1;
             ActivePlayer.CanFreeTrade = false;
 
-            foreach (var player in Players)
-            {
-                player.IsActive = !player.IsActive;
-            }
+            SwitchActivePlayer();
 
             var allCreaturesInHands = ActivePlayer.Hand.Concat(Enemy.Hand).Where(e => e is CreatureCard).Cast<CreatureCard>();
             foreach (var creature in allCreaturesInHands)
@@ -421,6 +418,9 @@
             {
                 player.IsActive = !player.IsActive;
             }
+
+            // TODO remove if this doesn't fix the snipe bug
+            TargetedCards.ForEach(e => e.IsTargeted = false);
         }
 
         private void HandleFatigue()
@@ -662,20 +662,7 @@
         {
             foreach (var archer in AttackingCreatures.Where(e => e.Name == "Archer"))
             {
-                int power = archer.Power + archer.TemporaryAddedPower;
-
-                foreach (CombatModifier modifier in CombatModifiers.Where(e => e.ConditionsEnemy == null && (e.Owner == Attacker || !e.OwnerOnly)))
-                {
-                    if (modifier.CardMeetsConditions(archer))
-                    {
-                        power += modifier.AddedPower;
-                    }
-                }
-
-                foreach (var equipment in archer.AttachedEquipments)
-                {
-                    power += equipment.AddedPower;
-                }
+                int power = CreaturePower(archer);
 
                 if (power < 0)
                 {

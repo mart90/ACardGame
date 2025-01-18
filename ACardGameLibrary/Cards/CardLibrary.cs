@@ -3895,7 +3895,7 @@
             new Card
             {
                 Name = "Free trade",
-                Text = "For the rest of this turn, you may buy cards from shop discard piles at or below your shop level.",
+                Text = "For the rest of this turn, you can buy cards from shop discard piles at or below your shop level.",
                 IsInShopPool = true,
                 Cost = 7,
                 AmountInShopPool = 2,
