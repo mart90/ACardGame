@@ -59,6 +59,11 @@ namespace ACardGame.UI
 
             AddChild(new Button(AssetManager, ButtonType.Long, 14, true, "Back to menu", delegate
             {
+                if (OpenChallengeGuid != null)
+                {
+                    CancelChallenge();
+                }
+
                 NewUiState = UiState.MainMenu;
             }));
 
@@ -93,9 +98,7 @@ namespace ACardGame.UI
         {
             if (OpenChallengeGuid != null)
             {
-                OpenChallengeGuid = null;
-                _server.CancelChallenge();
-                ToggleCreateChallengeButton.Text = "Create challenge";
+                CancelChallenge();
                 return;
             }
 
@@ -112,6 +115,13 @@ namespace ACardGame.UI
             {
                 Message.Text = JsonConvert.DeserializeObject<string>(response.Data);
             }
+        }
+
+        private void CancelChallenge()
+        {
+            OpenChallengeGuid = null;
+            _server.CancelChallenge();
+            ToggleCreateChallengeButton.Text = "Create challenge";
         }
 
         public override void Update()
