@@ -953,13 +953,13 @@
         {
             var eva = ActivePlayer.Leader;
 
-            if (ActivePlayer.MoneyToSpend < 6)
+            if (ActivePlayer.MoneyToSpend < 5)
             {
                 return;
             }
 
             eva.Counters++;
-            ActivePlayer.MoneyToSpend -= 6;
+            ActivePlayer.MoneyToSpend -= 5;
 
             if (eva.Counters == 10)
             {
