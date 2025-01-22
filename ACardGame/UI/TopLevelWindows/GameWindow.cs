@@ -996,7 +996,7 @@ namespace ACardGame.UI
             BuySilverButton.IsVisible = Player.MoneyToSpend >= 3;
             UpgradeShopButton.IsVisible = Player.MoneyToSpend >= Player.ShopLevel + 3;
             BuyGoldButton.IsVisible = Player.MoneyToSpend >= 6;
-            WorshipButton.IsVisible = Player.MoneyToSpend >= 6 && Player.Leader?.Name == "Eva";
+            WorshipButton.IsVisible = Player.MoneyToSpend >= 5 && Player.Leader?.Name == "Eva";
             RefreshShopButton.IsVisible = true;
 
             if (Player.FreeShopRefreshes > 0)

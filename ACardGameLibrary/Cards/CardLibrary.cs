@@ -83,6 +83,44 @@
 
             new CurrencyCard
             {
+                Name = "Fleeting coin",
+                Text = "When you play this, exile it.",
+                CurrencyValue = 2,
+                IsInShopPool = true,
+                Cost = 2,
+                AmountInShopPool = 2,
+                Types = new List<CardType>
+                {
+                    CardType.Currency
+                },
+                Effects = new List<CardEffect>
+                {
+                    new CardEffect
+                    {
+                        EffectPhase = CardEffectPhase.OnPlay,
+                        Effect = (game, owner) =>
+                        {
+                            owner.MoneyToSpend += 2;
+
+                            game.AddEventListener(new GameEventListener
+                            {
+                                Name = "Fleeting coin",
+                                Owner = owner,
+                                OwnersTurnOnly = true,
+                                Trigger = GameEvent.EndingTurn,
+                                Effect = (game, owner) =>
+                                {
+                                    owner.DiscardPile.RemoveAll(e => e.Name == "Fleeting coin");
+                                    game.RemoveAllListeners("Fleeting coin");
+                                }
+                            });
+                        }
+                    }
+                }
+            },
+
+            new CurrencyCard
+            {
                 Name = "Black market",
                 Text = "This card's value is equal to the highest value currency you've played this turn. Exile the currency you used to buy this.",
                 IsInShopPool = true,
@@ -555,7 +593,7 @@
                                     if (game.CharlemagneCounter == 2)
                                     {
                                         var creature = (CreatureCard)game.CardBeingPlayed;
-                                        
+
                                         if (creature.Name != "Champion")
                                         {
                                             creature.IsUnblockable = true;
@@ -950,24 +988,13 @@
             new Card
             {
                 Name = "Eva",
-                Text = "You may spend 6 currency to worship. If you do, add a counter to this card. When it reaches 10 counters, you win the game.",
+                Text = "You may spend 5 currency to worship. If you do, add a counter to this card. When it reaches 10 counters, you win the game.",
                 IsInShopPool = true,
                 Cost = 7,
                 AmountInShopPool = 1,
                 Types = new List<CardType>
                 {
                     CardType.Leader
-                },
-                Effects = new List<CardEffect>
-                {
-                    new CardEffect
-                    {
-                        EffectPhase = CardEffectPhase.OnPlay,
-                        Effect = (game, owner) =>
-                        {
-                            owner.CanWorship = true;
-                        }
-                    }
                 }
             },
             #endregion
@@ -1832,7 +1859,7 @@
                 Name = "Tree of life",
                 Text = "Can block any creature. When this blocks a creature, gain 3 life.",
                 Power = 1,
-                Defense = 8,
+                Defense = 12,
                 IsInShopPool = true,
                 Cost = 7,
                 AmountInShopPool = 2,
@@ -2079,7 +2106,7 @@
             new Equipment
             {
                 Name = "Inspiration",
-                Text = "Attach to a creature. It has +3/+3.",
+                Text = "Attach to a creature. It has +3/+2.",
                 IsInShopPool = true,
                 Cost = 3,
                 AmountInShopPool = 2,
@@ -2649,7 +2676,7 @@
             new Equipment
             {
                 Name = "Ring of power",
-                Text = "Attach to a friendly creature. It gets +3 power. At the end of combat, if this is still attached, exile that creature and gain Sauron.",
+                Text = "Attach to a friendly creature. It has    +3 power. At the end of combat, if this is still attached, exile that creature and gain Sauron.",
                 IsInShopPool = true,
                 Cost = 7,
                 AmountInShopPool = 1,
@@ -2752,7 +2779,7 @@
             new SupportCard
             {
                 Name = "Wisdom",
-                Text = "Choose two: Draw three cards; Gain 3 life; Legendary creatures have -4/-4; Your creatures have +2/+1.",
+                Text = "Choose two: Draw two cards; Gain 3 life; Legendary creatures have -4/-4; Your creatures have +2/+1.",
                 IsInShopPool = true,
                 Cost = 7,
                 AmountInShopPool = 2,
@@ -2770,7 +2797,7 @@
 
                             game.OptionsPickerOptions = new List<string>
                             {
-                                "Draw three cards",
+                                "Draw two cards",
                                 "Gain 3 life",
                                 "Legendary creatures have -4/-4",
                                 "Your creatures have +2/+1",
@@ -2786,11 +2813,11 @@
 
                             var optionsPicked = game.OptionsPicked;
 
-                            if (optionsPicked.Contains("Draw three cards"))
+                            if (optionsPicked.Contains("Draw two cards"))
                             {
                                 game.TriggerEvent(GameEvent.DrawingCardsFromCardEffect);
-                                owner.DrawCards(3);
-                                game.AddPublicLog($"{owner.Name} drew three cards");
+                                owner.DrawCards(2);
+                                game.AddPublicLog($"{owner.Name} drew two cards");
                             }
 
                             if (optionsPicked.Contains("Gain 3 life"))
@@ -2853,12 +2880,13 @@
             new Card
             {
                 Name = "Trade",
-                Text = "Draw two cards, then discard a card.",
+                Text = "Discard a card. If it was a currency card, draw two cards. Otherwise, gain a Silver.",
                 IsInShopPool = true,
                 Cost = 2,
                 AmountInShopPool = 2,
                 TargetsHand = true,
                 MinTargets = 1,
+                AdditionalPlayConditions = (game) => game.ActivePlayer.Hand.Count > 1,
                 Types = new List<CardType>
                 {
                     CardType.Action
@@ -2878,9 +2906,6 @@
                         EffectPhase = CardEffectPhase.OnPlay,
                         Effect = (game, owner) =>
                         {
-                            game.TriggerEvent(GameEvent.DrawingCardsFromCardEffect);
-                            owner.DrawCards(2);
-
                             game.CardBeingPlayedIsTargeting();
 
                             game.MessageToPlayer = new MessageToPlayerParams
@@ -2901,6 +2926,22 @@
                             game.MoveToDiscard(target);
 
                             game.AddPublicLog($"{owner.Name} discarded {target.Name}");
+
+                            if (target.GetMainType() == CardType.Currency)
+                            {
+                                game.TriggerEvent(GameEvent.DrawingCardsFromCardEffect);
+                                owner.DrawCards(2);
+
+                                game.AddPublicLog($"{owner.Name} drew two cards");
+                            }
+                            else
+                            {
+                                var silver = GetCard("Silver");
+                                silver.Owner = owner;
+                                owner.DiscardPile.Add(silver);
+
+                                game.AddPublicLog($"{owner.Name} gained a Silver");
+                            }
                         }
                     }
                 }
@@ -3098,7 +3139,7 @@
             new Card
             {
                 Name = "Reason",
-                Text = "Choose one: Gain a silver, or draw two cards.",
+                Text = "Choose one: Gain a Silver, or draw two cards.",
                 IsInShopPool = true,
                 Cost = 4,
                 AmountInShopPool = 2,
@@ -3770,13 +3811,14 @@
             new Card
             {
                 Name = "Alchemy",
-                Text = "Gain 1 life for each card in your hand. Then, exile a card from your hand.",
+                Text = "Exile a card from your hand. Then, gain 1 life for each card in hand.",
                 IsInShopPool = true,
                 Cost = 6,
                 AmountInShopPool = 2,
                 MaxTargets = 1,
                 MinTargets = 1,
                 TargetsHand = true,
+                AdditionalPlayConditions = (game) => game.ActivePlayer.Hand.Count > 1,
                 Types = new List<CardType>
                 {
                     CardType.Action
@@ -3796,7 +3838,7 @@
                         EffectPhase = CardEffectPhase.OnPlay,
                         Effect = (game, owner) =>
                         {
-                            int lifeGained = owner.Hand.Count - 1;
+                            int lifeGained = owner.Hand.Count - 2;
 
                             owner.Life += lifeGained;
                             game.AddPublicLog($"{owner.Name} gained {lifeGained} life");

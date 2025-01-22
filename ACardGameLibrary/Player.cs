@@ -53,7 +53,6 @@
 
         public Card Leader { get; set; }
 
-        public bool CanWorship { get; set; }
         public bool CanFreeTrade { get; set; }
 
         public void DrawCards(int amount)
