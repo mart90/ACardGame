@@ -29,7 +29,7 @@ namespace ACardGame
         public static int ScreenWidth;
         public static int ScreenHeight;
 
-        public const string GameVersion = "0.3";
+        public const string GameVersion = "0.3.1";
         public const bool DebugLogEnabled = true;
 
         public Main()
