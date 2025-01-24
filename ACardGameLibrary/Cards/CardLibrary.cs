@@ -2111,7 +2111,7 @@
                 Cost = 3,
                 AmountInShopPool = 2,
                 AddedPower = 3,
-                AddedDefense = 3
+                AddedDefense = 2
             },
 
             new SupportCard
