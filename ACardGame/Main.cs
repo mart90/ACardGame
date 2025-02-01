@@ -89,6 +89,11 @@ namespace ACardGame
                     _topLevelWindows.RemoveAll(e => e is HotSeatGame); 
                     _topLevelWindows.Add(new HotSeatGame(_assetManager, new GameStateManager()));
                 }
+                else if (_activeWindow.NewUiState == UiState.BotGame)
+                {
+                    _topLevelWindows.RemoveAll(e => e is BotGame);
+                    _topLevelWindows.Add(new BotGame(_assetManager, new GameStateManager()));
+                }
                 else if (_activeWindow.NewUiState == UiState.MultiplayerGame)
                 {
                     _topLevelWindows.RemoveAll(e => e is MultiplayerGame);

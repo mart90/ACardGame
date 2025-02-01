@@ -3,8 +3,10 @@
     public enum UiState
     {
         MainMenu,
-        HotSeatGame,
         HowToPlay,
+
+        HotSeatGame,
+        BotGame,
 
         LoginScreen,
         MultiplayerHome,
