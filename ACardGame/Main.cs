@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 
 namespace ACardGame
 {
@@ -49,9 +50,7 @@ namespace ACardGame
             ScreenHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height;
             _graphics.IsFullScreen = true;
 
-            //ScreenWidth = 1920;
-            //ScreenHeight = 1080;
-            //_graphics.IsFullScreen = false;
+            ReadConfig();
 
             _graphics.PreferredBackBufferWidth = ScreenWidth;
             _graphics.PreferredBackBufferHeight = ScreenHeight;
@@ -186,6 +185,47 @@ namespace ACardGame
             _spriteBatch.End();
 
             base.Draw(gameTime);
+        }
+
+        private void ReadConfig()
+        {
+            int lineCounter = 0;
+
+            try
+            {
+                var config = File.ReadAllText($"{AppDomain.CurrentDomain.BaseDirectory}/config.txt");
+
+                foreach (string line in config.Split("\r\n"))
+                {
+                    lineCounter++;
+
+                    if (line.StartsWith("#") || !line.Contains('='))
+                    {
+                        continue;
+                    }
+
+                    string[] keyValue = line.Split('=');
+                    string key = keyValue[0];
+                    string value = keyValue[1];
+
+                    if (key.ToLower() == "fullscreen")
+                    {
+                        _graphics.IsFullScreen = bool.Parse(value);
+                    }
+                    else if (key.ToLower() == "windowwidth" && _graphics.IsFullScreen == false)
+                    {
+                        ScreenWidth = int.Parse(value);
+                    }
+                    else if (key.ToLower() == "windowheight" && _graphics.IsFullScreen == false)
+                    {
+                        ScreenHeight = int.Parse(value);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error parsing config.txt on line {lineCounter}: {ex}");
+            }
         }
     }
 }

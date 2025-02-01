@@ -36,4 +36,9 @@
   <ItemGroup>
     <Folder Include="Content\sounds\" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="config.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

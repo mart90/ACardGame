@@ -1,0 +1,5 @@
+﻿fullscreen=true
+
+# Optional. Default to your desktop resolution, ignored when fullscreen is true
+#windowWidth=1920
+#windowHeight=1080
