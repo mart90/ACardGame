@@ -17,7 +17,7 @@ namespace ACardGame.UI
             
             GoDown();
 
-            AddChild(new Button(assetManager, ButtonType.Long, 13, true, "Hot seat", delegate
+            AddChild(new Button(assetManager, ButtonType.Long, 13, true, "Sandbox", delegate
             {
                 NewUiState = UiState.HotSeatGame;
             }));

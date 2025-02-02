@@ -1,4 +1,5 @@
 ﻿using ACardGameLibrary;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ACardGame.UI
@@ -17,8 +18,8 @@ namespace ACardGame.UI
 
         public void AddButtons(GameWindow game)
         {
-            SetCursor(0, 0);
-            EnemySupportsButton = new Button(AssetManager, ButtonType.Long, 15, true, "Supports", delegate
+            SetCursor(43, 1);
+            EnemySupportsButton = new Button(AssetManager, ButtonType.Long, 14, true, "Supports", delegate
             {
                 game.ShowSupportsInPlay(false);
             })
@@ -27,8 +28,8 @@ namespace ACardGame.UI
             };
             AddChild(EnemySupportsButton);
 
-            SetCursor(0, 95.5);
-            ActivePlayerSupportsButton = new Button(AssetManager, ButtonType.Long, 15, true, "Supports", delegate
+            SetCursor(43, 95);
+            ActivePlayerSupportsButton = new Button(AssetManager, ButtonType.Long, 14, true, "Supports", delegate
             {
                 game.ShowSupportsInPlay(true);
             })
@@ -42,14 +43,18 @@ namespace ACardGame.UI
         {
             Children.RemoveAll(e => e is BattlefieldLane);
 
-            SetCursor(50 - 8 * gameState.AttackingCreatures.Count, 0);
+            double cardWidth = GetCardWidth(gameState.AttackingCreatures);
+
+            double startX = cardWidth == 12.5 ? 50 - 7.5 * gameState.AttackingCreatures.Count : 1;
+
+            SetCursor(startX, 6);
 
             foreach (CreatureCard creature in gameState.AttackingCreatures)
             {
-                var lane = new BattlefieldLane(AssetManager, creature.BlockedBy.Any() ? creature.BlockedBy.Count * 12.5 : 12.5, true);
-                lane.Refresh(creature, visiblePlayer.IsAttacking);
+                var lane = new BattlefieldLane(AssetManager, creature.BlockedBy.Any() ? creature.BlockedBy.Count * cardWidth : cardWidth, true);
+                lane.Refresh(creature, visiblePlayer.IsAttacking, 12.5 / cardWidth);
                 AddChild(lane);
-                AddSpacing(2.5);
+                AddSpacing(cardWidth * 0.25);
             }
 
             var activePlayerSupports = gameState.GetPlayerSupports(visiblePlayer.IsActive);
@@ -73,6 +78,26 @@ namespace ACardGame.UI
             {
                 EnemySupportsButton.IsVisible = false;
             }
+        }
+
+        private double GetCardWidth(List<CreatureCard> attackingCreatures)
+        {
+            int creatures = 0;
+
+            foreach (CreatureCard creature in attackingCreatures)
+            {
+                creatures++;
+
+                if (creature.BlockedBy.Count > 1)
+                {
+                    creatures += creature.BlockedBy.Count - 1;
+                }
+            }
+
+            double cardPlusSpacingwidth = 98.0f / creatures;
+            double cardWidth = cardPlusSpacingwidth * 0.8;
+
+            return cardWidth > 12.5 ? 12.5 : cardWidth;
         }
     }
 }

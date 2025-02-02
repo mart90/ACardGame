@@ -26,6 +26,11 @@ namespace ACardGame.UI
             Player.Name = "Player";
             Enemy.Name = "Bot";
 
+            Player.Life = 1000;
+
+            PlayerName.Text = Player.Name;
+            EnemyName.Text = Enemy.Name;
+
             if (new Random().Next() % 2 == 0)
             {
                 gameStateManager.SwitchActivePlayer();
@@ -37,17 +42,62 @@ namespace ACardGame.UI
 
         public void DoBotTurn()
         {
-            _bot.DoTurn();
+            if (GameState.IsInCombat)
+            {
+                _bot.DoTurnCombat();
 
-            CardStackViewer.Show(GameState.ActivePlayer.CardsPlayedThisTurn, "Opponent played:");
+                if (!GameState.IsInCombat)
+                {
+                    _bot.DoTurnPostCombat();
+                }
+            }
+            else
+            {
+                _bot.DoTurn();
 
-            GameState.SwitchTurn();
+                if (GameState.IsInCombat)
+                {
+                    ToggleShopVisible();
+                    ToggleShopButton.IsVisible = true;
+                }
+            }
+
+            if (GameState.ResolvingAfterPlay)
+            {
+                Card target = _bot.GetTarget(GameState.TargetingCard.Name);
+
+                if (target != null)
+                {
+                    target.IsTargeted = true;
+                }
+
+                ResolveAccepted();
+            }
+            else if (GameState.RequireAccept)
+            {
+                ResolveAccepted();
+            }
+
+            if (GameState.IsInCombat)
+            {
+                Battlefield.Refresh(GameState, Player);
+            }
+            else
+            {
+                LogViewer.Show(GameState.PublicLog);
+            }
         }
 
-        protected override void EndTurn()
+        public override void LeftClick(Microsoft.Xna.Framework.Point position)
         {
-            base.EndTurn();
-            DoBotTurn();
+            base.LeftClick(position);
+
+            if (GameState.ActivePlayer.Name == "Bot")
+            {
+                DoBotTurn();
+            }
+
+            RefreshHand();
         }
     }
 }

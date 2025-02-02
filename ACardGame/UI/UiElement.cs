@@ -37,7 +37,7 @@ namespace ACardGame.UI
         public bool ForceOneLine { get; set; }
 
         /// <summary>
-        /// 0 is bottom
+        /// Highest is on top
         /// </summary>
         public int DrawLayer { get; set; }
 

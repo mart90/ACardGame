@@ -11,28 +11,32 @@ namespace ACardGame.UI
             Texture = assetManager.LoadTexture("UI/lane_background");
         }
 
-        public void Refresh(CreatureCard attackingCreature, bool playerIsAttacking)
+        public void Refresh(CreatureCard attackingCreature, bool playerIsAttacking, double scaleDownFactor)
         {
             var blockers = attackingCreature.BlockedBy;
             var supports = attackingCreature.AttachedEquipments;
 
             double relativeCardSizeX = blockers.Any() ? 98 / blockers.Count : 98;
 
-            AspectRatio = blockers.Any() ? 0.2 * blockers.Count : 0.2;
+            double bottomStartY = 100 - 37.5 / scaleDownFactor;
+
+            float cardScale = 1 / (float)scaleDownFactor;
+
+            AspectRatio = blockers.Any() ? (0.23 / scaleDownFactor) * blockers.Count : 0.23 / scaleDownFactor;
 
             int attackerX = blockers.Any() ? 51 - 50 / blockers.Count : 1;
-            int supportSpacing = 5;
+            double supportSpacing = 5 / scaleDownFactor;
 
             if (supports.Any())
             {
                 GoDown();
-                int startY = playerIsAttacking ? 67 - supportSpacing * supports.Count : 0;
+                double startY = playerIsAttacking ? bottomStartY - supportSpacing * supports.Count : 0;
                 SetCursor(attackerX, startY);
 
                 for (int i = 0; i < supports.Count; i++)
                 {
                     var support = supports[i];
-                    var supportContainer = new CardContainer(AssetManager, relativeCardSizeX, true, null);
+                    var supportContainer = new CardContainer(AssetManager, relativeCardSizeX, true, null, cardScale);
                     supportContainer.OnLeftClickAction = delegate
                     {
                         supportContainer.ToggleTargeted();
@@ -46,7 +50,7 @@ namespace ACardGame.UI
 
             GoRight();
             SetCursor(attackerX, playerIsAttacking ? 67 : supportSpacing * supports.Count);
-            var attackerContainer = new CardContainer(AssetManager, relativeCardSizeX, true, null);
+            var attackerContainer = new CardContainer(AssetManager, relativeCardSizeX, true, null, cardScale);
             attackerContainer.OnLeftClickAction = delegate 
             { 
                 attackerContainer.ToggleTargeted();
@@ -60,7 +64,7 @@ namespace ACardGame.UI
                 for (int i = 0; i < blockers.Count; i++)
                 {
                     var blockerX = 1 + relativeCardSizeX * i;
-                    SetCursor(blockerX, playerIsAttacking ? 0 : 67);
+                    SetCursor(blockerX, playerIsAttacking ? 0 : bottomStartY);
 
                     var blocker = blockers[i];
                     var blockerSupports = blocker.AttachedEquipments;
@@ -69,13 +73,13 @@ namespace ACardGame.UI
                     {
                         GoDown(false);
 
-                        int startY = playerIsAttacking ? 0 : 67 - supportSpacing * blockerSupports.Count;
+                        double startY = playerIsAttacking ? 0 : bottomStartY - supportSpacing * blockerSupports.Count;
                         SetCursorY(startY);
 
                         for (int si = 0; si < blockerSupports.Count; si++)
                         {
                             var support = blockerSupports[si];
-                            var supportContainer = new CardContainer(AssetManager, relativeCardSizeX, true, null);
+                            var supportContainer = new CardContainer(AssetManager, relativeCardSizeX, true, null, cardScale);
                             supportContainer.OnLeftClickAction = delegate
                             {
                                 supportContainer.ToggleTargeted();
@@ -87,7 +91,7 @@ namespace ACardGame.UI
                         }
                     }
 
-                    var blockerContainer = new CardContainer(AssetManager, relativeCardSizeX, true, null);
+                    var blockerContainer = new CardContainer(AssetManager, relativeCardSizeX, true, null, cardScale);
                     blockerContainer.OnLeftClickAction = delegate 
                     { 
                         blockerContainer.ToggleTargeted();
@@ -98,8 +102,8 @@ namespace ACardGame.UI
                     AddSpacing(1);
                 }
 
-                SetCursor(50 - 50 / blockers.Count, 40);
-                AddChild(new UiElement(AssetManager.LoadTexture("UI/crossed_swords"), 98 / blockers.Count));
+                SetCursor(50 - 40 / blockers.Count, 40 + 2.5 * scaleDownFactor);
+                AddChild(new UiElement(AssetManager.LoadTexture("UI/crossed_swords"), 80 / blockers.Count));
             }
         }
     }
