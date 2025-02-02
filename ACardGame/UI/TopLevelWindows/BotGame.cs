@@ -26,8 +26,6 @@ namespace ACardGame.UI
             Player.Name = "Player";
             Enemy.Name = "Bot";
 
-            Player.Life = 1000;
-
             PlayerName.Text = Player.Name;
             EnemyName.Text = Enemy.Name;
 
