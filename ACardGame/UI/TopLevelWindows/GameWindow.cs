@@ -1032,6 +1032,15 @@ namespace ACardGame.UI
             {
                 EndTurnButton.IsVisible = true;
                 AcceptButton.IsVisible = false;
+
+                if (GameState.IsInCombat)
+                {
+                    EndTurnButton.Text = "Pass";
+                }
+                else
+                {
+                    EndTurnButton.Text = "End turn";
+                }
             }
 
             if (GameState.RevealOpponentHand && !CardStackViewer.IsVisible)
