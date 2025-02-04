@@ -144,12 +144,16 @@
 
         public Card? GetTarget(string cardName)
         {
+            var validTargets = new List<Card>(Me.ActiveCombatCards);
+
+            if (cardName == "Squire")
+            {
+                validTargets.RemoveAt(validTargets.Count - 1);
+            }
+
             if (cardName == "Squire" || cardName == "Rage")
             {
-                var creature = Me.ActiveCombatCards.FirstOrDefault(e => 
-                    e is CreatureCard creature 
-                    && !creature.BlockedBy.Any()
-                    && !e.IsBeingPlayed);
+                var creature = validTargets.FirstOrDefault(e => e is CreatureCard creature && !creature.BlockedBy.Any());
 
                 if (creature != null)
                 {
