@@ -59,7 +59,7 @@
                 PlayCardByName(leader.Name);
             }
 
-            if (!ShopHasPriorityCards)
+            if (!ShopHasPriorityCards && Me.Life >= 17)
             {
                 _game.ActionRefreshShop();
             }
