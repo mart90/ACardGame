@@ -95,7 +95,7 @@ namespace ACardGame.UI
                 DoBotTurn();
             }
 
-            if (MessageToPlayer.Text.Contains("target"))
+            if (MessageToPlayer?.Text != null && MessageToPlayer.Text.Contains("target"))
             {
                 MessageToPlayer.Text = "";
             }
