@@ -93,11 +93,8 @@ namespace ACardGame.UI
             if (GameState.ActivePlayer.Name == "Bot")
             {
                 DoBotTurn();
-            }
 
-            if (MessageToPlayer?.Text != null && MessageToPlayer.Text.Contains("target"))
-            {
-                MessageToPlayer.Text = "";
+                GameState.MessageToPlayer = null;
             }
 
             RefreshHand();

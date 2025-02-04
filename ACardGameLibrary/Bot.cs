@@ -72,7 +72,7 @@
                     .Where(e => _cardsToBuy.Contains(e.Name))
                     .ToList();
 
-                if (priorityCards.Count() > 1 && currencyValueInHand >= 4)
+                if (priorityCards.Count > 1 && currencyValueInHand >= 4)
                 {
                     PlaySilvers(4);
                 }
@@ -83,24 +83,27 @@
 
                 foreach (string cardName in _cardsToBuy)
                 {
-                    var card = priorityCards.Where(e => e.Name == cardName).FirstOrDefault();
+                    var cards = priorityCards.Where(e => e.Name == cardName).ToList();
 
-                    if (card == null)
+                    foreach (var card in cards)
                     {
-                        continue;
-                    }
-
-                    if (card.GetMainType() == CardType.Leader)
-                    {
-                        if (_boughtLeader)
+                        if (card.GetMainType() == CardType.Leader)
                         {
-                            continue;
+                            if (_boughtLeader)
+                            {
+                                break;
+                            }
+
+                            _boughtLeader = true;
                         }
 
-                        _boughtLeader = true;
-                    }
+                        _game.BuyCard(card);
 
-                    _game.BuyCard(card);
+                        if (_game.ActivePlayer.MoneyToSpend < 2)
+                        {
+                            break;
+                        }
+                    }
 
                     if (_game.ActivePlayer.MoneyToSpend < 2)
                     {
