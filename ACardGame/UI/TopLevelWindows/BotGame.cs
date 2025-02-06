@@ -1,6 +1,5 @@
 ﻿using ACardGameLibrary;
 using System;
-using System.Linq;
 
 namespace ACardGame.UI
 {

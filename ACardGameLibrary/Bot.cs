@@ -160,7 +160,7 @@
                     return creature;
                 }
 
-                return Me.ActiveCombatCards.First(e => e is CreatureCard);
+                return validTargets.FirstOrDefault(e => e is CreatureCard);
             }
 
             return null;
@@ -173,6 +173,11 @@
                 var card = _hand.FirstOrDefault(e => 
                     e.Name == cardName 
                     && (e is SupportCard || (e is CreatureCard creature && !creature.IsUnplayable)));
+
+                if (card == null || (card.Name == "Rage" && !Me.ActiveCombatCards.Any(e => e is CreatureCard)))
+                {
+                    continue;
+                }
 
                 if (card != null)
                 {
@@ -224,7 +229,12 @@
                 GetTarget("Rage").IsTargeted = true;
             }
 
-            _game.PlayCard(_hand.First(e => e.Name == name));
+            var card = _hand.First(e => e.Name == name);
+
+            if (!_game.CardTargetsOnPlay(card))
+            {
+                _game.PlayCard(card);
+            }
         }
     }
 }

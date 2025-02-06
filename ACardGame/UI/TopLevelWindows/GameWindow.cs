@@ -458,7 +458,7 @@ namespace ACardGame.UI
                 return;
             }
 
-            bool cardTargetsOnPlay = CardTargetsOnPlay(card);
+            bool cardTargetsOnPlay = GameState.CardTargetsOnPlay(card);
 
             if (GameState.TargetingCard != null)
             {
@@ -563,11 +563,6 @@ namespace ACardGame.UI
                 cards.Remove(boughtCard);
                 CardStackViewer.Show(cards);
             }
-        }
-
-        protected bool CardTargetsOnPlay(Card card)
-        {
-            return card.TargetsOnPlay || (card is CreatureCard && GameState.IsInCombat && !GameState.ActivePlayer.IsAttacking);
         }
 
         private void ShowDiscardViewer(bool isMyDiscardPile)
@@ -850,7 +845,7 @@ namespace ACardGame.UI
             AcceptButton.IsVisible = false;
             EndTurnButton.IsVisible = true;
 
-            if (CardTargetsOnPlay(card) && !GameState.ResolvingAfterPlay)
+            if (GameState.CardTargetsOnPlay(card) && !GameState.ResolvingAfterPlay)
             {
                 GameState.PlayCard(card);
             }

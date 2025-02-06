@@ -263,7 +263,7 @@ namespace ACardGame.UI
             }
             else
             {
-                if (!CardTargetsOnPlay(card))
+                if (!GameState.CardTargetsOnPlay(card))
                 {
                     GameState.PlayCard(card);
                 }
@@ -650,7 +650,7 @@ namespace ACardGame.UI
             bool makeMoveMessageOriginatedHere = false;
             bool isValid = true;
 
-            if (CardTargetsOnPlay(card) && !GameState.ResolvingAfterPlay)
+            if (GameState.CardTargetsOnPlay(card) && !GameState.ResolvingAfterPlay)
             {
                 _makeMoveMessage = new GameMove
                 {
@@ -834,7 +834,7 @@ namespace ACardGame.UI
             AcceptButton.IsVisible = false;
             EndTurnButton.IsVisible = true;
 
-            if (CardTargetsOnPlay(card) && !GameState.ResolvingAfterPlay)
+            if (GameState.CardTargetsOnPlay(card) && !GameState.ResolvingAfterPlay)
             {
                 GameState.PlayCard(card);
 

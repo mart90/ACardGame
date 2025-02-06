@@ -940,6 +940,11 @@
             RequireAccept = true;
         }
 
+        public bool CardTargetsOnPlay(Card card)
+        {
+            return card.TargetsOnPlay || (card is CreatureCard && IsInCombat && !ActivePlayer.IsAttacking);
+        }
+
         public virtual void PlayActionQueued()
         {
             ActionQueued.Owner.Hand.Add(ActionQueued);
