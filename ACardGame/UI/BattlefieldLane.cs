@@ -37,10 +37,7 @@ namespace ACardGame.UI
                 {
                     var support = supports[i];
                     var supportContainer = new CardContainer(AssetManager, relativeCardSizeX, true, null, cardScale);
-                    supportContainer.OnLeftClickAction = delegate
-                    {
-                        supportContainer.ToggleTargeted();
-                    };
+                    supportContainer.OnLeftClickAction = supportContainer.ToggleTargeted;
                     supportContainer.DrawLayer = i;
                     supportContainer.SetCard(support);
                     AddChild(supportContainer);
@@ -49,12 +46,9 @@ namespace ACardGame.UI
             }
 
             GoRight();
-            SetCursor(attackerX, playerIsAttacking ? 67 : supportSpacing * supports.Count);
+            SetCursor(attackerX, playerIsAttacking ? 62.5 : supportSpacing * supports.Count);
             var attackerContainer = new CardContainer(AssetManager, relativeCardSizeX, true, null, cardScale);
-            attackerContainer.OnLeftClickAction = delegate 
-            { 
-                attackerContainer.ToggleTargeted();
-            };
+            attackerContainer.OnLeftClickAction = attackerContainer.ToggleTargeted;
             attackerContainer.DrawLayer = supports.Count;
             attackerContainer.SetCard(attackingCreature);
             AddChild(attackerContainer);
@@ -80,10 +74,7 @@ namespace ACardGame.UI
                         {
                             var support = blockerSupports[si];
                             var supportContainer = new CardContainer(AssetManager, relativeCardSizeX, true, null, cardScale);
-                            supportContainer.OnLeftClickAction = delegate
-                            {
-                                supportContainer.ToggleTargeted();
-                            };
+                            supportContainer.OnLeftClickAction = supportContainer.ToggleTargeted;
                             supportContainer.DrawLayer = si;
                             supportContainer.SetCard(support);
                             AddChild(supportContainer);
@@ -92,10 +83,7 @@ namespace ACardGame.UI
                     }
 
                     var blockerContainer = new CardContainer(AssetManager, relativeCardSizeX, true, null, cardScale);
-                    blockerContainer.OnLeftClickAction = delegate 
-                    { 
-                        blockerContainer.ToggleTargeted();
-                    };
+                    blockerContainer.OnLeftClickAction = blockerContainer.ToggleTargeted;
                     blockerContainer.DrawLayer = blockerSupports.Count;
                     blockerContainer.SetCard(blocker);
                     AddChild(blockerContainer);
