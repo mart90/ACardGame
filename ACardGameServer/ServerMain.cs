@@ -1,7 +1,6 @@
 ﻿using ACardGameLibrary;
 using LiteNetLib;
 using LiteNetLib.Utils;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 
