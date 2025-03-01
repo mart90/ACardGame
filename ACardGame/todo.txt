@@ -1,3 +1,4 @@
+Are you sure? Playing that would immediately die
 Enemy shop level visible
 Leaderboard
 Making sure opponent still here
@@ -6,3 +7,4 @@ Reconnecting
 BUGS
 Snipe more than one element?
 Charlemagne sometimes no work
+Volley affects own creatures

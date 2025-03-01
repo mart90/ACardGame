@@ -3335,7 +3335,7 @@
             new Card
             {
                 Name = "Spy",
-                Text = "Look at your opponent's hand and choose a non-currency card from it. They discard that card.",
+                Text = "Look at your opponent's hand. You may choose a non-currency card from it. They discard that card.",
                 IsInShopPool = true,
                 Cost = 3,
                 AmountInShopPool = 2,
@@ -3365,7 +3365,7 @@
 
                             game.MessageToPlayer = new MessageToPlayerParams
                             {
-                                Message = "Choose a card for your opponent to discard",
+                                Message = "You may choose a non-currency card for your opponent to discard",
                                 Severity = MessageSeverity.Information
                             };
                         }
@@ -3377,7 +3377,12 @@
                         {
                             game.RemoveSelectorFlag = true;
 
-                            var target = game.TargetedCards.Single();
+                            var target = game.TargetedCards.SingleOrDefault();
+
+                            if (target == null)
+                            {
+                                return;
+                            }
 
                             game.MoveToDiscard(target);
                             game.Enemy.Hand.Remove(target);
