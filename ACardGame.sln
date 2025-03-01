@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACardGameLibrary", "ACardGa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACardGameServer", "ACardGameServer\ACardGameServer.csproj", "{DBAFB4E9-7B38-4D66-A314-44C4F110122A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACardGameBlazor", "ACardGameBlazor\ACardGameBlazor.csproj", "{67F4998F-11A1-4826-9AD0-08FB0EBB9264}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{DBAFB4E9-7B38-4D66-A314-44C4F110122A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DBAFB4E9-7B38-4D66-A314-44C4F110122A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DBAFB4E9-7B38-4D66-A314-44C4F110122A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67F4998F-11A1-4826-9AD0-08FB0EBB9264}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67F4998F-11A1-4826-9AD0-08FB0EBB9264}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67F4998F-11A1-4826-9AD0-08FB0EBB9264}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67F4998F-11A1-4826-9AD0-08FB0EBB9264}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
