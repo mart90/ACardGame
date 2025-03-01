@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACardGameLibrary", "ACardGa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACardGameServer", "ACardGameServer\ACardGameServer.csproj", "{DBAFB4E9-7B38-4D66-A314-44C4F110122A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACardGameBlazor", "ACardGameBlazor\ACardGameBlazor.csproj", "{EA318A2D-E900-461D-B65C-7017856F0637}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{DBAFB4E9-7B38-4D66-A314-44C4F110122A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DBAFB4E9-7B38-4D66-A314-44C4F110122A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DBAFB4E9-7B38-4D66-A314-44C4F110122A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EA318A2D-E900-461D-B65C-7017856F0637}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EA318A2D-E900-461D-B65C-7017856F0637}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EA318A2D-E900-461D-B65C-7017856F0637}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EA318A2D-E900-461D-B65C-7017856F0637}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
