@@ -20,6 +20,7 @@ namespace ACardGame.UI
         public FaceDownCardStack EnemyHand { get; set; }
         public CardContainer EnemyDiscardPile { get; set; }
         public Shop EnemyShop { get; set; }
+        public TextArea EnemyShopLevel { get; set; }
 
         public CardContainer ActivePlayerLeader { get; set; }
         public CardContainer EnemyLeader { get; set; }
@@ -199,7 +200,11 @@ namespace ACardGame.UI
             AddChild(EnemyHand);
 
             // Enemy shop
-            SetCursor(1.5, 1.5);
+            SetCursor(1.5, 1);
+            EnemyShopLevel = new TextArea(AssetManager, "buttonFont", 20, true, 8);
+
+            AddChild(EnemyShopLevel);
+            SetCursor(1.5, 3);
             EnemyShop = new Shop(AssetManager, 22, true);
             for (int i = 0; i < 3; i++)
             {
@@ -979,6 +984,8 @@ namespace ACardGame.UI
             {
                 MoneyToSpend.IsVisible = false;
             }
+
+            EnemyShopLevel.Text = $"Opponent shop level: {Enemy.ShopLevel}";
 
             for (int i = 2; i <= 7; i++)
             {

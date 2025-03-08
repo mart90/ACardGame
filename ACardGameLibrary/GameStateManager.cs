@@ -522,12 +522,8 @@
             {
                 power += equipment.AddedPower;
             }
-
-            var modifiers = creature.Owner.IsAttacking ?
-                CombatModifiers.Where(e => e.Owner == Attacker || !e.OwnerOnly) 
-                : CombatModifiers.Where(e => e.Owner == Defender || !e.OwnerOnly);
             
-            foreach (CombatModifier modifier in modifiers.Where(e => e.ConditionsEnemy == null))
+            foreach (CombatModifier modifier in CombatModifiers.Where(e => e.ConditionsEnemy == null))
             {
                 if (modifier.CardMeetsConditions(creature))
                 {
@@ -547,11 +543,7 @@
                 defense += equipment.AddedDefense;
             }
 
-            var modifiers = creature.Owner.IsAttacking ?
-                CombatModifiers.Where(e => e.Owner == Attacker || !e.OwnerOnly)
-                : CombatModifiers.Where(e => e.Owner == Defender || !e.OwnerOnly);
-
-            foreach (CombatModifier modifier in modifiers.Where(e => e.ConditionsEnemy == null))
+            foreach (CombatModifier modifier in CombatModifiers.Where(e => e.ConditionsEnemy == null))
             {
                 if (modifier.CardMeetsConditions(creature))
                 {
@@ -591,9 +583,6 @@
             int defendingPower = 0;
             int defendingDefense = 0;
 
-            var attackerModifiers = CombatModifiers.Where(e => e.Owner == Attacker || !e.OwnerOnly);
-            var defenderModifiers = CombatModifiers.Where(e => e.Owner == Defender || !e.OwnerOnly);
-
             foreach (var defender in attacker.BlockedBy)
             {
                 if (attacker.Types.Contains(CardType.Flying)
@@ -604,7 +593,7 @@
                     continue;
                 }
 
-                foreach (CombatModifier modifier in attackerModifiers.Where(e => e.ConditionsEnemy != null))
+                foreach (CombatModifier modifier in CombatModifiers.Where(e => e.ConditionsEnemy != null))
                 {
                     if (modifier.CardMeetsConditions(attacker) && modifier.EnemyMeetsConditions(defender))
                     {
@@ -616,7 +605,7 @@
                 defendingPower += CreaturePower(defender);
                 defendingDefense += CreatureDefense(defender);
 
-                foreach (CombatModifier modifier in defenderModifiers.Where(e => e.ConditionsEnemy != null))
+                foreach (CombatModifier modifier in CombatModifiers.Where(e => e.ConditionsEnemy != null))
                 {
                     if (modifier.CardMeetsConditions(defender) && modifier.EnemyMeetsConditions(attacker))
                     {

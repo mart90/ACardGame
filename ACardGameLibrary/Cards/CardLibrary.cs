@@ -83,9 +83,8 @@
 
             new CurrencyCard
             {
-                Name = "Fleeting coin",
-                Text = "When you play this, exile it.",
-                CurrencyValue = 2,
+                Name = "Cobalt",
+                Text = "This card's value is equal to your opponent's shop level minus your shop level, plus one.",
                 IsInShopPool = true,
                 Cost = 2,
                 AmountInShopPool = 2,
@@ -100,20 +99,10 @@
                         EffectPhase = CardEffectPhase.OnPlay,
                         Effect = (game, owner) =>
                         {
-                            owner.MoneyToSpend += 2;
-
-                            game.AddEventListener(new GameEventListener
+                            if (game.Enemy.ShopLevel >= owner.ShopLevel)
                             {
-                                Name = "Fleeting coin",
-                                Owner = owner,
-                                OwnersTurnOnly = true,
-                                Trigger = GameEvent.EndingTurn,
-                                Effect = (game, owner) =>
-                                {
-                                    owner.DiscardPile.RemoveAll(e => e.Name == "Fleeting coin");
-                                    game.RemoveAllListeners("Fleeting coin");
-                                }
-                            });
+                                owner.MoneyToSpend += game.Enemy.ShopLevel - owner.ShopLevel + 1;
+                            }
                         }
                     }
                 }

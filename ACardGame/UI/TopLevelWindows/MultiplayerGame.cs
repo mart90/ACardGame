@@ -343,6 +343,11 @@ namespace ACardGame.UI
                     MessageToPlayer.IsVisible = false;
                 }
 
+                if (AllCardsViewer.IsVisible)
+                {
+                    AllCardsViewer.IsVisible = false;
+                }
+
                 if (CardStackViewer.IsVisible)
                 {
                     CardStackViewer.IsVisible = false;
@@ -369,7 +374,8 @@ namespace ACardGame.UI
                     ToggleShopButton,
                     ShowCardsPlayedThisTurnButton,
                     BackToMenuButton,
-                    ShowCardsPlayedThisTurnEnemyButton
+                    ShowCardsPlayedThisTurnEnemyButton,
+                    AllCardsViewer
                 };
 
                 enabledChildren.AddRange(ViewShopDiscardButtons);
