@@ -13,6 +13,12 @@
 
         public bool CardMeetsConditions(CreatureCard card)
         {
+            if ((OwnerOnly && card.Owner != Owner)
+                || (EnemyOnly && card.Owner == Owner))
+            {
+                return false;
+            }
+
             if (Conditions == null)
             {
                 return true;
